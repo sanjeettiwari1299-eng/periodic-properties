@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JEE Advanced - Periodic Table Masterclass</title>
+<style>
+    body {
+        margin: 0;
+        padding: 0;
+        background-color: #050505;
+        color: #e0e0e0;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        overflow-x: hidden;
+    }
+    .slider-container {
+        width: 90vw;
+        height: 85vh;
+        margin: 4vh auto;
+        position: relative;
+        border: 2px solid #8b0000;
+        box-shadow: 0 0 20px rgba(255, 0, 0, 0.3);
+        background-color: #0a0000;
+        border-radius: 10px;
+    }
+    .slide {
+        display: none;
+        padding: 40px 60px;
+        height: 100%;
+        box-sizing: border-box;
+        overflow-y: auto;
+    }
+    .slide.active {
+        display: block;
+        animation: fadeIn 0.4s ease-in-out;
+    }
+    @keyframes fadeIn {
+        from { opacity: 0; transform: scale(0.98); }
+        to { opacity: 1; transform: scale(1); }
+    }
+    h1, h2, h3 {
+        color: #ff3333;
+        text-transform: uppercase;
+        border-bottom: 1px solid #440000;
+        padding-bottom: 10px;
+        margin-top: 0;
+        text-shadow: 0 0 5px rgba(255, 51, 51, 0.3);
+    }
+    h1 { font-size: 2.8em; text-align: center; border: none; margin-top: 10%; }
+    .content-box {
+        background-color: #1a0505;
+        border-left: 5px solid #ff3333;
+        padding: 15px 20px;
+        margin: 20px 0;
+        box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
+    }
+    .pyq-box {
+        background-color: #0a110a;
+        border: 1px solid #2e8b57;
+        border-left: 5px solid #2e8b57;
+        padding: 15px;
+        margin-top: 20px;
+    }
+    .pyq-title { color: #3cb371; font-weight: bold; margin-bottom: 10px; font-size: 1.2em; }
+    p, li { line-height: 1.7; font-size: 1.15em; margin-bottom: 10px; }
+    .highlight { color: #ff6666; font-weight: bold; }
+    .meme-text { font-style: italic; color: #999; font-size: 0.9em; }
+    .controls {
+        text-align: center;
+        margin-top: 15px;
+        margin-bottom: 20px;
+    }
+    button {
+        background-color: #8b0000;
+        color: white;
+        border: 1px solid #ff3333;
+        padding: 10px 30px;
+        font-size: 1.2em;
+        cursor: pointer;
+        border-radius: 5px;
+        margin: 0 15px;
+        transition: all 0.3s ease;
+    }
+    button:hover { background-color: #ff3333; box-shadow: 0 0 15px #ff3333; transform: translateY(-2px); }
+    .slide-number { position: absolute; bottom: 20px; right: 30px; color: #666; font-size: 1.2em; font-weight: bold; }
+    table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+    th, td { border: 1px solid #440000; padding: 10px; text-align: center; }
+    th { background-color: #330000; color: #ff9999; }
+</style>
+</head>
+<body>
+
+<div class="slider-container">
+    
+    <!-- Slide 1: Title -->
+    <div class="slide active">
+        <h1>The Periodic Table<br><span style="color:#fff; font-size:0.5em;">Class 11 / JEE Core Base: Element Mafia ki Kahani</span></h1>
+        <p style="text-align:center; font-size:1.3em; margin-top:30px; color:#ff9999;">"Inorganic Chemistry ka map hai ye, bina iske rasta bhatak jaoge!"</p>
+        <div class="content-box">
+            <p><strong>Is presentation mein kya hai?</strong><br>
+            History (Dobereiner se Moseley tak), Modern Table ka Structure, aur sabse important: <strong>Periodic Trends aur unke Exceptions (JEE ke favorites!)</strong>. Hum har trend ke peeche ki sachai (Zeff vs Shielding) ko decode karenge.</p>
+        </div>
+        <div class="slide-number">Slide 1 / 20</div>
+    </div>
+
+    <!-- Slide 2: Dobereiner -->
+    <div class="slide">
+        <h2>1. The Early Struggles: Dobereiner's Triads</h2>
+        <p>Chemistry ka pehla "Jugaad". Dobereiner ne 3 elements ke group banaye aur bola: <span class="highlight">"Bhai, pehle aur teesre ka average mass nikal, beech wale ka mass aa jayega!"</span></p>
+        <div class="content-box">
+            <h3>The Hit & Flop:</h3>
+            <ul>
+                <li><strong>Hit (Worked for):</strong> (Li, Na, K), (Ca, Sr, Ba), (Cl, Br, I).</li>
+                <li><strong>Flop (Failed for):</strong> Pura table ispe set hi nahi ho paya. Fe, Co, Ni ne aukaat dikha di kyunki unka mass lagbhag same tha, average ka logic fail ho gaya.</li>
+            </ul>
+            <p class="meme-text">*Le Elements: "Tu mere ko average samjha hai kya?"*</p>
+        </div>
+        <div class="slide-number">Slide 2 / 20</div>
+    </div>
+
+    <!-- Slide 3: Newlands -->
+    <div class="slide">
+        <h2>2. Newlands' Law of Octaves</h2>
+        <p>John Newlands ko music ka bohot shauk tha. Usne elements ko increasing atomic mass mein lagaya aur bola: <strong>Har 8th element ki property 1st jaisi hogi (Sa-Re-Ga-Ma-Pa-Dha-Ni-Sa).</strong></p>
+        <div class="content-box">
+            <h3>Where did the music stop?</h3>
+            <ul>
+                <li>Ye rule sirf <strong>Calcium (Ca)</strong> tak badiya chala (lighter elements).</li>
+                <li>Jaise hi d-block (transition elements) ki entry hui, 8th element ka logic toot gaya (ab 18 ke baad repeat hone laga).</li>
+                <li>Noble gases tab tak discover hi nahi hui thi, warna Sa-Re-Ga-Ma 8 pe nahi, 9 pe repeat hota!</li>
+            </ul>
+        </div>
+        <div class="slide-number">Slide 3 / 20</div>
+    </div>
+
+    <!-- Slide 4: Mendeleev -->
+    <div class="slide">
+        <h2>3. The OG Predictor: Mendeleev's Table</h2>
+        <p>Mendeleev "Chad" tha. Usne sirf elements ko arrange nahi kiya, balki jo elements discover nahi hue the, unke liye <span class="highlight">Khaali Jagah (Gaps)</span> chhodi aur unki properties advance mein predict kar di!</p>
+        <div class="content-box">
+            <h3>Mendeleev ke "Eka" (One step below) Predictions:</h3>
+            <ul>
+                <li><strong>Eka-Boron:</strong> Scandium (Sc)</li>
+                <li><strong>Eka-Aluminium:</strong> Gallium (Ga) - <em>(JEE PYQ favourite!)</em></li>
+                <li><strong>Eka-Silicon:</strong> Germanium (Ge)</li>
+            </ul>
+            <p><strong>Drawbacks:</strong> Isotopes ki position explain nahi kar paya (sabka mass alag toh jagah bhi alag honi chahiye thi), aur Hydrogen ki position controversial rahi.</p>
+        </div>
+        <div class="slide-number">Slide 4 / 20</div>
+    </div>
+
+    <!-- Slide 5: Moseley -->
+    <div class="slide">
+        <h2>4. The Modern Savior: Henry Moseley (1913)</h2>
+        <p>Moseley ne X-ray experiment kiya aur dekha ki element ki asal identity uska <strong>Atomic Mass nahi, balki Atomic Number (Z) hai (Number of Protons)</strong>.</p>
+        <div class="pyq-box">
+            <div class="pyq-title">Modern Periodic Law</div>
+            <p>"The physical and chemical properties of the elements are periodic functions of their <strong>Atomic Numbers</strong>."</p>
+            <p>Is ek line ne Mendeleev ke saare faults (Isotopes problem, Ar-K inversion) ko ek jhatke mein fix kar diya. Kyunki mass aage-peeche ho sakta hai, par proton number humesha +1 se badhta hai.</p>
+        </div>
+        <div class="slide-number">Slide 5 / 20</div>
+    </div>
+
+    <!-- Slide 6: Structure -->
+    <div class="slide">
+        <h2>5. Anatomy of the Modern Table</h2>
+        <p>Table ko Blocks (s, p, d, f), Periods (Rows) aur Groups (Columns) mein divide kiya gaya hai.</p>
+        <div class="content-box">
+            <ul>
+                <li><strong>7 Periods:</strong> Principle quantum number (n) ko darshata hai. Row 1 (n=1) se Row 7 (n=7).</li>
+                <li><strong>18 Groups:</strong> Vertical columns. Same group = Same outer electronic configuration.</li>
+                <li><strong>Magic Numbers:</strong> 2, 8, 8, 18, 18, 32. Ye numbers periods mein elements ki ginti hain, jo subshells (s, p, d, f) ke filling ke hisaab se aati hain.</li>
+            </ul>
+        </div>
+        <div class="slide-number">Slide 6 / 20</div>
+    </div>
+
+    <!-- Slide 7: IUPAC > 100 -->
+    <div class="slide">
+        <h2>6. IUPAC Naming for Z > 100</h2>
+        <p>Naye elements ke naam pe countries aur scientists aapas mein ladne lage. IUPAC ne bola: "Ladayi band karo, hum numbers ko hi Latin naam de denge."</p>
+        <div class="content-box">
+            <p><strong>Roots:</strong> 0 = nil, 1 = un, 2 = bi, 3 = tri, 4 = quad, 5 = pent, 6 = hex, 7 = sept, 8 = oct, 9 = enn. <br>Last mein <strong>'-ium'</strong> lagana hai.</p>
+            <table style="width: 80%; margin: 10px auto;">
+                <tr><th>Atomic No (Z)</th><th>IUPAC Name</th><th>Symbol</th></tr>
+                <tr><td>104</td><td>Unnilquadium</td><td>Unq</td></tr>
+                <tr><td>108</td><td>Unniloctium</td><td>Uno</td></tr>
+                <tr><td>118</td><td>Ununoctium</td><td>Uuo</td></tr>
+            </table>
+            <p class="meme-text">Rutherfordium (104) ke time Soviet vs US controversy (Kurchatovium vs Rutherfordium) ke karan ye system aaya tha.</p>
+        </div>
+        <div class="slide-number">Slide 7 / 20</div>
+    </div>
+
+    <!-- Slide 8: s-block -->
+    <div class="slide">
+        <h2>7. Meet the Blocks: s-Block (The Highly Reactive)</h2>
+        <p>Groups 1 aur 2. Ye log apna valence electron paani (water) mein dalte hi aag laga dete hain (literally). They just want to lose electrons and attain noble gas state.</p>
+        <div class="content-box">
+            <ul>
+                <li><strong>Group 1 (Alkali Metals):</strong> ns1 configuration. Li, Na, K, Rb, Cs, Fr. Inke oxides water mein ghul kar strong base (alkali) banate hain.</li>
+                <li><strong>Group 2 (Alkaline Earth Metals):</strong> ns2 configuration. Be, Mg, Ca, Sr, Ba, Ra. Earth's crust mein milte hain.</li>
+                <li><strong>Key Feature:</strong> Bhot bade size ke hote hain, easily electron lose karte hain, isliye <strong>Strongest Reducing Agents</strong> hote hain.</li>
+            </ul>
+        </div>
+        <div class="slide-number">Slide 8 / 20</div>
+    </div>
+
+    <!-- Slide 9: p-block -->
+    <div class="slide">
+        <h2>8. p-Block (The Diverse Mafia)</h2>
+        <p>Group 13 se 18. Ye akela block hai jisme <strong>Metals, Non-metals, aur Metalloids</strong> teeno milte hain. Ye chemistry ki sabse colorful aur dangerous family hai.</p>
+        <div class="content-box">
+            <ul>
+                <li><strong>Group 15 (Pnictogens):</strong> N, P, As, Sb, Bi (Choking smell compounds).</li>
+                <li><strong>Group 16 (Chalcogens):</strong> O, S, Se, Te, Po (Ore-forming).</li>
+                <li><strong>Group 17 (Halogens):</strong> F, Cl, Br, I (Salt producers). Most electronegative.</li>
+                <li><strong>Group 18 (Noble Gases):</strong> He, Ne, Ar, Kr, Xe, Rn. Sanyaasi log, unreactive (mostly), full octet.</li>
+            </ul>
+        </div>
+        <div class="slide-number">Slide 9 / 20</div>
+    </div>
+
+    <!-- Slide 10: d & f block -->
+    <div class="slide">
+        <h2>9. d-Block & f-Block (The Heavyweights)</h2>
+        
+        <div class="content-box">
+            <h3>d-Block (Transition Elements):</h3>
+            <p>Groups 3 to 12. "Transition" kyun? Kyunki ye s-block (highly electropositive) se p-block (electronegative) ke beech ka bridge hain. Inka (n-1)d orbital partially filled hota hai. <br><strong>Vibes:</strong> Colorful compounds, Catalyst king, Variable oxidation states (+2, +3, +4... tak!). (Exception: Zn, Cd, Hg are NOT considered typical transition elements kyunki unka d-orbital full 3d10 hota hai).</p>
+        </div>
+        <div class="content-box">
+            <h3>f-Block (Inner-Transition Elements):</h3>
+            <p>Table ke neeche chupaye gaye 2 rows. <strong>Lanthanoids (4f)</strong> aur <strong>Actinoids (5f - All radioactive)</strong>. (n-2)f orbital fill hota hai.</p>
+        </div>
+        <div class="slide-number">Slide 10 / 20</div>
+    </div>
+
+    <!-- Slide 11: Zeff -->
+    <div class="slide">
+        <h2>10. The Real Boss: Effective Nuclear Charge (Zeff)</h2>
+        <p>Agar tumhe Trends samajhne hain, toh <strong>Zeff</strong> samajhna padega. Ye Zeff hi sab bimariyon (exceptions) ki jadd hai.</p>
+        <div class="content-box">
+            <h3>Zeff = Z (Nuclear Charge) - &sigma; (Screening/Shielding Constant)</h3>
+            <ul>
+                <li><strong>Z (Nuclear Charge):</strong> Nucleus (Protons) ka aakhri electron ke liye "Pyar" (Attraction).</li>
+                <li><strong>&sigma; (Shielding):</strong> Andar wale electrons ka aakhri electron ko bahar dhakelna (Repulsion / "Dhokha").</li>
+                <li><strong>Rule:</strong> s > p > d > f. <span class="highlight">d aur f orbitals ka shielding bohot hi WAHEEYAT (poor) hota hai.</span> Wo nucleus ke attraction ko rok nahi paate, jisse outer electron andar kich jata hai!</li>
+            </ul>
+        </div>
+        <div class="slide-number">Slide 11 / 20</div>
+    </div>
+
+    <!-- Slide 12: Atomic Radius -->
+    <div class="slide">
+        <h2>11. Atomic Radius (Size of the Atom)</h2>
+        <p>General Trend: Left se Right (Period mein) &rarr; Size Ghat ta hai. Top se Bottom (Group mein) &rarr; Size Badhta hai.</p>
+        <div class="content-box">
+            <h3>Why?</h3>
+            <ul>
+                <li><strong>Left to Right:</strong> Shell wahi rehta hai, par protons (Z) badh rahe hain. Zeff badhta hai, electrons andar ki taraf zordaar pull hote hain. Shrinkage!</li>
+                <li><strong>Top to Bottom:</strong> Naye shells (n) add ho rahe hain. Distance badh gaya, size badh gaya. Zeff lagbhag constant rehta hai group mein.</li>
+            </ul>
+        </div>
+        <div class="slide-number">Slide 12 / 20</div>
+    </div>
+
+    <!-- Slide 13: Size Exceptions -->
+    <div class="slide">
+        <h2>12. Size Exceptions (Jahan JEE khelta hai)</h2>
+        
+        <div class="pyq-box">
+            <div class="pyq-title">Group 13 ka Lafda: Aluminium (Al) vs Gallium (Ga)</div>
+            <p><strong>Expectation:</strong> B < Al < Ga < In < Tl (Neeche aane par size badhna chahiye).</p>
+            <p><strong>Reality:</strong> B < <span class="highlight">Ga < Al</span> < In < Tl</p>
+            <p><strong>Reason (Transition Contraction):</strong> Ga se pehle 3d series (Sc to Zn) aati hai. Inke d-electrons ka <strong>Poor Shielding Effect</strong> hota hai. Zeff badh jata hai, nucleus Ga ke outer electrons ko bohot zor se kichta hai, aur Ga ka size Al se thoda chhota ho jata hai! (Al=143 pm, Ga=135 pm).</p>
+        </div>
+        <div class="slide-number">Slide 13 / 20</div>
+    </div>
+
+    <!-- Slide 14: Lanthanoid Contraction -->
+    <div class="slide">
+        <h2>13. Lanthanoid Contraction (The d-Block Twin Maker)</h2>
+        <p>Jab hum 4d series se 5d series mein aate hain (e.g., Zr se Hf), toh size badhna chahiye. Par ek twist hai!</p>
+        <div class="content-box">
+            <h3>The 4f Mafia:</h3>
+            <p>Hf (Hafnium, Z=72) se theek pehle 14 Lanthanoids (4f electrons) fill hote hain. <strong>f-electrons ka shielding "Sabse Ghatiya" hota hai</strong>. Is extreme poor shielding ki wajah se nucleus ka pull itna badh jata hai ki 5d series ka size shrink hoke lagbhag 4d series ke barabar ho jata hai.</p>
+            <p><span class="highlight">Result: Zr (160 pm) &approx; Hf (159 pm).</span> Inhe "Chemical Twins" bolte hain kyunki size same hone se properties bhi almost same ho jati hain!</p>
+        </div>
+        <div class="slide-number">Slide 14 / 20</div>
+    </div>
+
+    <!-- Slide 15: Ionic Radius -->
+    <div class="slide">
+        <h2>14. Ionic Radius & Isoelectronic Species</h2>
+        <p>Ions banne ke baad size kaise compare karein?</p>
+        <div class="content-box">
+            <ul>
+                <li><strong>Cation (Positive Ion):</strong> Humesha apne parent atom se chhota hota hai. (Electron gaya, Zeff badha, size shrink hua. Na+ < Na)</li>
+                <li><strong>Anion (Negative Ion):</strong> Humesha parent atom se bada hota hai. (Electron aaya, repulsion badha, Zeff ghata, size expand hua. Cl- > Cl)</li>
+            </ul>
+            <hr style="border-color:#440000;">
+            <h3>Isoelectronic Series (Same no. of electrons)</h3>
+            <p>Examples: N<sup>3-</sup>, O<sup>2-</sup>, F<sup>-</sup>, Na<sup>+</sup>, Mg<sup>2+</sup>, Al<sup>3+</sup> (Sabke paas 10 electrons hain).</p>
+            <p><strong>Trick:</strong> Jisme Protons (Z) sabse jyada, uska Size sabse CHHOTA! (More protons = Stronger pull).<br>
+            <span class="highlight">Size Order: N<sup>3-</sup> > O<sup>2-</sup> > F<sup>-</sup> > Na<sup>+</sup> > Mg<sup>2+</sup> > Al<sup>3+</sup></span></p>
+        </div>
+        <div class="slide-number">Slide 15 / 20</div>
+    </div>
+
+    <!-- Slide 16: Ionization Enthalpy -->
+    <div class="slide">
+        <h2>15. Ionization Enthalpy (IE)</h2>
+        <p><strong>Definition:</strong> Ek isolated gaseous atom se aakhri electron nikalne ke liye kitni energy (رشوت / Bribe) deni padegi. (Always Endothermic, &Delta;H > 0).</p>
+        <div class="content-box">
+            <h3>General Trend:</h3>
+            <ul>
+                <li><strong>Left to Right (Increases):</strong> Size chhota ho raha hai, Zeff badh raha hai, nucleus electron ko tight pakad ke rakha hai. Nikalna mushkil (High IE).</li>
+                <li><strong>Top to Bottom (Decreases):</strong> Size bada ho raha hai, electron nucleus se door hai. Thodi si energy do aur electron bahar (Low IE).</li>
+            </ul>
+            <p><strong>Successive IE:</strong> Humesha IE3 > IE2 > IE1. Kyunki positive ion se further electron nikalna bohot mushkil hota hai.</p>
+        </div>
+        <div class="slide-number">Slide 16 / 20</div>
+    </div>
+
+    <!-- Slide 17: IE Exceptions -->
+    <div class="slide">
+        <h2>16. IE Exceptions (Half-filled & Fully-filled Magic)</h2>
+        <p>JEE walon ko general trends se nafrat hai. Unhe exceptions chahiye!</p>
+        <div class="pyq-box">
+            <div class="pyq-title">Period 2 IE Order (Crucial)</div>
+            <p>Expectation: Li < Be < B < C < N < O < F < Ne</p>
+            <p><strong>Reality: Li < <span class="highlight">B < Be</span> < C < <span class="highlight">O < N</span> < F < Ne</strong></p>
+            <ul>
+                <li><strong>Be (2s<sup>2</sup>) vs B (2s<sup>2</sup> 2p<sup>1</sup>):</strong> Be ka s-orbital fully filled aur stable hai, s-orbital nucleus ke jyada paas (penetrated) hota hai. B ke p-electron ko nikalna aasan hai. So, IE of Be > B.</li>
+                <li><strong>N (2p<sup>3</sup>) vs O (2p<sup>4</sup>):</strong> N exactly half-filled (stable) configuration mein hai. O apna ek electron dekar half-filled banna chahta hai. So, IE of N > O.</li>
+            </ul>
+        </div>
+        <div class="slide-number">Slide 17 / 20</div>
+    </div>
+
+    <!-- Slide 18: Electron Gain Enthalpy -->
+    <div class="slide">
+        <h2>17. Electron Gain Enthalpy (EGE or &Delta;egH)</h2>
+        <p><strong>Definition:</strong> Jab ek isolated gaseous atom ek extra electron <strong>accept</strong> karta hai, toh kitni energy release hoti hai. (Usually Exothermic, &Delta;H is negative). Halogens ko electron ka sabse jyada lalach hota hai (Highest negative EGE).</p>
+        <div class="content-box">
+            <h3>General Trend vs Exception (The Trap!):</h3>
+            <p>General trend kehta hai ki F ki EGE sabse jyada negative honi chahiye. Par sachai alag hai!</p>
+            <p><strong>Reality: Chlorine (Cl) > Fluorine (F)</strong> (Magnitude mein)</p>
+            <p><strong>Reason:</strong> F ka size bohot bohot chhota hai aur 2p subshell mein pehle se 7 electrons congested hain. Naya electron aayega toh existing electrons usko bohot repel karenge (Inter-electronic repulsion). Cl ka 3p subshell bada hai, room khali hai, naya electron aaram se adjust ho jata hai.</p>
+        </div>
+        <div class="slide-number">Slide 18 / 20</div>
+    </div>
+
+    <!-- Slide 19: Electronegativity -->
+    <div class="slide">
+        <h2>18. Electronegativity (EN) - The Electron Chor</h2>
+        <p><strong>Definition:</strong> Covalent bond mein shared pair of electrons ko apni taraf kheenchna. Ye koi absolute energy nahi hai, bas ek tendency (aadat) hai.</p>
+        <div class="content-box">
+            <h3>The FON Rule (Most Electronegative Mafia):</h3>
+            <p>Pauling Scale pe highest values:</p>
+            <ul>
+                <li><strong>Fluorine (F) = 4.0</strong> (Sabse bada chor)</li>
+                <li><strong>Oxygen (O) = 3.5</strong></li>
+                <li><strong>Nitrogen (N) = Chlorine (Cl) = 3.0</strong></li>
+            </ul>
+            <p>Trend: Left to Right &rarr; Increases. Top to Bottom &rarr; Decreases. (Isme koi major shielding wala exception nahi hai! Fluorine dominates strictly).</p>
+        </div>
+        <div class="slide-number">Slide 19 / 20</div>
+    </div>
+
+    <!-- Slide 20: Diagonal & Inert Pair -->
+    <div class="slide">
+        <h2>19. Final Pro-Tips: Diagonal Rel. & Inert Pair Effect</h2>
+        
+        <div class="content-box">
+            <h3>Diagonal Relationship:</h3>
+            <p>2nd period ka element, 3rd period ke diagonally opposite element se properties match karta hai. <br><strong>(Li &amp; Mg), (Be &amp; Al), (B &amp; Si)</strong>.<br>
+            <em>Reason:</em> Unka Size (radius) aur Charge/Size (Ionic potential/Polarizing power) ratio lagbhag same hota hai.</p>
+        </div>
+        <div class="content-box">
+            <h3>Inert Pair Effect (Teaser for p-Block):</h3>
+            <p>p-block mein neeche jane par (like Tl, Pb, Bi), s-orbital ke 2 electrons bond banane se mana kar dete hain (They become INERT). Kyun? Wahi purana villain: Poor shielding of d and f electrons makes nucleus pull the s-electrons very tightly. Isliye Pb(+2) is more stable than Pb(+4).</p>
+        </div>
+        <div class="slide-number">Slide 20 / 20</div>
+    </div>
+
+</div>
+
+<div class="controls">
+    <button onclick="changeSlide(-1)">&#8592; Previous</button>
+    <button onclick="changeSlide(1)">Next &#8594;</button>
+</div>
+
+<script>
+    let currentSlide = 0;
+    const slides = document.querySelectorAll('.slide');
+
+    function changeSlide(direction) {
+        slides[currentSlide].classList.remove('active');
+        currentSlide += direction;
+        
+        if (currentSlide < 0) {
+            currentSlide = slides.length - 1;
+        } else if (currentSlide >= slides.length) {
+            currentSlide = 0;
+        }
+        
+        slides[currentSlide].classList.add('active');
+    }
+</script>
+
+</body>
+</html>
