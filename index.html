@@ -3,172 +3,409 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>Shorts Feed</title>
+<title>Shorts Fire — Reels</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%;background:#050507;color:#fff;font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;overflow:hidden}
-#topbar{position:fixed;top:0;left:0;right:0;z-index:50;padding:12px 12px 8px;background:linear-gradient(#050507,rgba(5,5,7,0))}
-#title{font-weight:800;font-size:20px;margin-bottom:8px}
-#title span{color:#ff375f}
+#top{position:fixed;top:0;left:0;right:0;z-index:60;padding:12px 12px 8px;background:linear-gradient(#050507ee,#05050700)}
+#top .row{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+#top h1{font-size:20px;font-weight:800}
+#top h1 span{color:#ff375f}
+.iconBtn{background:#14141c;border:1px solid #2a2a38;color:#fff;border-radius:10px;padding:6px 10px;font-size:16px;cursor:pointer}
 #chips{display:flex;gap:7px;overflow-x:auto;scrollbar-width:none}
 #chips::-webkit-scrollbar{display:none}
 .chip{flex:0 0 auto;border:1px solid #2a2a38;background:#14141c;color:#ddd;border-radius:999px;padding:6px 12px;font-size:13px;cursor:pointer}
 .chip.on{background:linear-gradient(135deg,#ff2d4b,#ff6b2b);border-color:transparent;color:#fff;font-weight:700}
-#feed{height:100vh;overflow-y:scroll;scroll-snap-type:y mandatory;scrollbar-width:none}
+#feed{position:fixed;inset:0;overflow-y:scroll;scroll-snap-type:y mandatory;scrollbar-width:none;outline:none}
 #feed::-webkit-scrollbar{display:none}
-.short{height:100vh;width:100%;position:relative;scroll-snap-align:start;scroll-snap-stop:always;background:#000;overflow:hidden}
-.short iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
-.short .info{position:absolute;left:14px;right:70px;bottom:calc(24px + env(safe-area-inset-bottom));z-index:5;pointer-events:none;text-shadow:0 1px 4px #000}
+.short{height:100vh;height:100dvh;width:100%;position:relative;scroll-snap-align:start;scroll-snap-stop:always;background:#000;overflow:hidden}
+.short .ph{position:absolute;inset:0;background:#111 center/cover no-repeat;z-index:0}
+.short iframe{position:absolute;inset:0;width:100%;height:100%;border:0;z-index:1}
+.short .shade{position:absolute;inset:0;z-index:2;pointer-events:none;background:linear-gradient(to top,rgba(0,0,0,.8),rgba(0,0,0,0) 45%)}
+.short .tap{position:absolute;inset:0;z-index:3}
+.short .info{position:absolute;left:14px;right:84px;bottom:calc(28px + env(safe-area-inset-bottom));z-index:4;pointer-events:none;text-shadow:0 1px 4px #000}
 .short .info b{display:block;font-size:16px;line-height:1.35;margin-bottom:6px}
 .short .info small{color:#ddd;font-size:13px}
-.short .shade{position:absolute;inset:0;z-index:2;pointer-events:none;background:linear-gradient(to top,rgba(0,0,0,.75),rgba(0,0,0,0) 40%)}
-.short .open{position:absolute;right:12px;bottom:24px;z-index:6;background:#ffffff1a;color:#fff;border:1px solid #fff4;border-radius:10px;padding:8px 10px;font-size:12px;text-decoration:none}
-#msg{height:100vh;display:flex;align-items:center;justify-content:center;padding:28px;text-align:center;color:#aaa;line-height:1.7;font-size:15px}
+.actions{position:absolute;right:10px;bottom:calc(90px + env(safe-area-inset-bottom));z-index:5;display:flex;flex-direction:column;gap:16px;align-items:center}
+.act{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px;color:#eee;cursor:pointer;user-select:none;background:none;border:0}
+.act .ico{width:44px;height:44px;border-radius:50%;background:#ffffff1f;display:flex;align-items:center;justify-content:center;font-size:20px}
+.act .ico.on{background:#ff375f}
+.heart{position:absolute;left:50%;top:45%;transform:translate(-50%,-50%) scale(0);font-size:90px;z-index:6;pointer-events:none;transition:transform .25s,opacity .4s;opacity:0}
+.heart.show{transform:translate(-50%,-50%) scale(1);opacity:1}
+#msg{height:100vh;height:100dvh;display:flex;align-items:center;justify-content:center;padding:28px;text-align:center;color:#aaa;line-height:1.7;font-size:15px}
 #msg code{background:#14141c;padding:2px 6px;border-radius:6px;color:#ffb3c1}
-#count{position:fixed;right:12px;top:14px;z-index:60;font-size:12px;color:#888}
+.overlay{position:fixed;inset:0;z-index:100;background:#000b;display:none;align-items:center;justify-content:center;padding:20px}
+.overlay.show{display:flex}
+.sheet{background:#14141c;border:1px solid #2a2a38;border-radius:16px;padding:18px;width:min(380px,100%);text-align:center}
+.sheet h2{font-size:18px;margin-bottom:10px}
+.sheet p{color:#9a9aae;font-size:13px;line-height:1.6;margin:6px 0 12px}
+.sheet .btns{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+.sheet button{background:#1d1d29;border:1px solid #2a2a38;color:#fff;border-radius:10px;padding:10px 14px;font-size:14px;cursor:pointer}
+.sheet button.hot{background:linear-gradient(135deg,#ff2d4b,#ff6b2b);border:0;font-weight:700}
+#toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:#000d;color:#fff;padding:10px 14px;border-radius:10px;font-size:13px;z-index:120;display:none}
+#stats{font-size:12px;color:#9a9aae;text-align:left;margin:8px 0 12px;line-height:1.7}
 </style>
 </head>
 <body>
-<div id="topbar">
-  <div id="title">Shorts<span>Fire</span></div>
+<div id="top">
+  <div class="row">
+    <h1>Reels <span>·</span></h1>
+    <button class="iconBtn" id="btnSettings" aria-label="Settings">⚙️</button>
+  </div>
   <div id="chips"></div>
 </div>
-<div id="count"></div>
-<div id="feed"></div>
+<div id="feed" tabindex="0"></div>
 
-<script>
+<div class="overlay" id="moodPanel">
+  <div class="sheet">
+    <h2>Abhi mood kya hai?</h2>
+    <p>Isi se feed tumhare mood ke hisaab se chalegi.</p>
+    <div class="btns" id="moodBtns"></div>
+  </div>
+</div>
+
+<div class="overlay" id="checkoutPanel">
+  <div class="sheet">
+    <h2 id="coQ">Kaisa feel ho rahe ho?</h2>
+    <p id="coSub">Isi se feed tumhare liye adjust hogi.</p>
+    <div class="btns">
+      <button class="hot" data-k="better">😊 Better</button>
+      <button data-k="same">😐 Same</button>
+      <button data-k="worse">😞 Worse</button>
+      <button data-k="skip">Abhi nahi</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="settings">
+  <div class="sheet">
+    <h2>⚙️ Settings</h2>
+    <div id="stats"></div>
+    <div class="btns">
+      <button class="hot" id="sReload">🔄 Feed reload</button>
+      <button id="sMood">🧠 Mood badlo</button>
+      <button id="sReset">🎛️ Taste reset</button>
+      <button id="sClose">Close</button>
+    </div>
+  </div>
+</div>
+<div id="toast"></div>
+
+<script type="module">
+import { buildFeed, recordSignal, recordCheckout, emptyState, trimState, currentTimeSlot } from './js/algo.js';
+
 /* ============ CONFIG ============
    LayerBase libSQL (managed, HTTP). LAYERBASE_URL = instance ka https URL,
-   LAYERBASE_TOKEN = auth token. Ye browser me dikhenge, isliye read-only token use karo.
+   LAYERBASE_TOKEN = read-only auth token (browser me public hota hai).
 */
-var CONFIG = {
-  LAYERBASE_URL: '',     // e.g. https://<your-host>.cloud.layerbase.dev
-  LAYERBASE_TOKEN: '',   // read-only auth token
+const CONFIG = {
+  LAYERBASE_URL: '',
+  LAYERBASE_TOKEN: '',
   TABLE: 'shorts',
-  LIMIT: 300
+  LIMIT: 1000
 };
 
-var feedEl = document.getElementById('feed');
-var chipsEl = document.getElementById('chips');
-var countEl = document.getElementById('count');
-var ALL = [];
-var CURRENT = 'all';
+const MOODS = [['happy','😊 Happy'],['sad','😔 Sad'],['very_sad','💔 Very sad'],['focus','🎯 Focus'],['bhakti','🙏 Bhakti']];
+const CHIPS = [
+  {e:'✨',label:'All',cats:[]},
+  {e:'😂',label:'Comedy',cats:['comedy','hindi_film_comedy','comedy_quotes','public_comedy']},
+  {e:'🦚',label:'Krishna',cats:['krishna','radhakrishna_serial']},
+  {e:'🙏',label:'Bhakti',cats:['bhakti','bhajans','geeta','pravachan','katha','ramayan','mahabharat','hanuman','devotion','spiritual_quotes']},
+  {e:'🧠',label:'Psychology',cats:['psychology','psychology_tricks','dark_psychology','manipulation_awareness']},
+  {e:'💔',label:'Shayari',cats:['sad_songs','heartbreak','shayari']},
+  {e:'🎵',label:'Songs',cats:['old_songs','music','peaceful_piano','aura_music']},
+  {e:'🔥',label:'Attitude',cats:['attitude','attitude_songs','dialogue_status']},
+  {e:'💪',label:'Motivation',cats:['motivation','life_lessons']},
+  {e:'🔬',label:'Sci-Tech',cats:['science','tech']}
+];
 
-function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+const $ = id => document.getElementById(id);
+const feedEl = $('feed');
+const STATE_KEY = 'sf_state_v1';
+let state = loadState();
+let mood = localStorage.getItem('sf_mood') || '';
+let chipIdx = 0;
+let candidates = [];
+let shown = [];                 // current feed (video objects)
+let seen = new Set();           // ids shown this session (avoid repeats on refresh)
+let sess = { mood: mood, cats: new Map(), reels: 0 };
+let pendingMood = null;
+let observer = null;
+const cardInfo = new Map();     // id -> {el, iframe, t0, muted}
 
-function showMsg(html){
-  feedEl.innerHTML = '<div id="msg">'+html+'</div>';
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function toast(m){const t=$('toast');t.textContent=m;t.style.display='block';clearTimeout(toast.t);toast.t=setTimeout(()=>t.style.display='none',2000);}
+
+/* ---------- state persistence (browser) ---------- */
+function loadState(){
+  try{ const raw = localStorage.getItem(STATE_KEY); if(raw) return Object.assign(emptyState(), JSON.parse(raw)); }catch(e){}
+  return emptyState();
+}
+function saveState(){
+  try{ trimState(state); localStorage.setItem(STATE_KEY, JSON.stringify(state)); }catch(e){}
+}
+function signal(v, event, value){
+  const lastCats = [...sess.cats.entries()].sort((a,b)=>b[1]-a[1]).slice(0,3).map(e=>e[0]);
+  recordSignal(state, v, event, value||0, mood || 'focus', lastCats);
+  saveState();
 }
 
-/* LayerBase libSQL: Hrana v2 pipeline (/v2/pipeline), same as @libsql/client over HTTP */
+/* ---------- LayerBase libSQL (Hrana v2 pipeline) ---------- */
 function sqlArg(v){
   if(v===null||v===undefined) return {type:'null'};
   if(typeof v==='number') return Number.isFinite(v)?{type:'integer',value:String(Math.trunc(v))}:{type:'null'};
   return {type:'text',value:String(v)};
 }
 function cellVal(c){ if(c==null) return null; if(typeof c==='object'&&'value' in c) return c.value; return c; }
-
 async function dbQuery(sql, args){
-  var base = String(CONFIG.LAYERBASE_URL||'').replace(/\/+$/,'');
-  var res = await fetch(base+'/v2/pipeline', {
-    method: 'POST',
-    headers: {
-      'Authorization': 'Bearer '+CONFIG.LAYERBASE_TOKEN,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({requests:[
-      {type:'execute', stmt:{sql:sql, args:(args||[]).map(sqlArg)}},
-      {type:'close'}
-    ]})
+  const base = String(CONFIG.LAYERBASE_URL||'').replace(/\/+$/,'');
+  const res = await fetch(base+'/v2/pipeline',{
+    method:'POST',
+    headers:{'Authorization':'Bearer '+CONFIG.LAYERBASE_TOKEN,'Content-Type':'application/json'},
+    body:JSON.stringify({requests:[{type:'execute',stmt:{sql:sql,args:(args||[]).map(sqlArg)}},{type:'close'}]})
   });
-  var text = await res.text();
+  const text = await res.text();
   if(!res.ok) throw new Error('DB '+res.status+': '+text.slice(0,200));
-  var data = JSON.parse(text);
-  var bad = (data.results||[]).find(function(r){return r.type==='error';});
+  const data = JSON.parse(text);
+  const bad = (data.results||[]).find(r=>r.type==='error');
   if(bad) throw new Error((bad.error&&bad.error.message)||'query error');
-  var result = data.results[0].response.result;
-  var cols = (result.cols||[]).map(function(c){return c.name;});
-  return (result.rows||[]).map(function(row){
-    var o = {};
-    row.forEach(function(c,i){ o[cols[i]||i] = cellVal(c); });
-    return o;
-  });
+  const result = data.results[0].response.result;
+  const cols = (result.cols||[]).map(c=>c.name);
+  return (result.rows||[]).map(row=>{ const o={}; row.forEach((c,i)=>{o[cols[i]||i]=cellVal(c);}); return o; });
 }
 
-async function loadShorts(){
+async function loadCandidates(){
   if(!CONFIG.LAYERBASE_URL || !CONFIG.LAYERBASE_TOKEN){
-    showMsg('LayerBase connect nahi hai.<br>index.html me <code>CONFIG.LAYERBASE_URL</code> aur <code>CONFIG.LAYERBASE_TOKEN</code> bharo.');
-    countEl.textContent = '';
+    feedEl.innerHTML = '<div id="msg">LayerBase connect nahi hai.<br>index.html me <code>CONFIG.LAYERBASE_URL</code> aur <code>CONFIG.LAYERBASE_TOKEN</code> bharo.</div>';
     return;
   }
-  showMsg('Loading...');
+  feedEl.innerHTML = '<div id="msg">Loading...</div>';
   try{
-    var rows = await dbQuery(
-      'SELECT video_id, title, channel, category, duration_sec FROM '+CONFIG.TABLE+
-      ' ORDER BY (feed_rank IS NULL), feed_rank, added_at DESC LIMIT ?', [parseInt(CONFIG.LIMIT,10)]
+    const rows = await dbQuery(
+      'SELECT video_id, title, channel, category, duration_sec, added_at FROM '+CONFIG.TABLE+' ORDER BY added_at DESC LIMIT ?',
+      [CONFIG.LIMIT]
     );
-    ALL = rows.filter(function(r){return /^[A-Za-z0-9_-]{11}$/.test(r.video_id);});
-    buildChips();
-    render();
+    candidates = rows.map(r=>({
+      video_id: String(r.video_id||''), title: String(r.title||''), channel: String(r.channel||''),
+      category: String(r.category||''), duration_sec: r.duration_sec==null?null:Number(r.duration_sec),
+      added_at: Number(r.added_at||0)
+    })).filter(r=>/^[A-Za-z0-9_-]{11}$/.test(r.video_id));
   }catch(e){
-    showMsg('DB se data nahi aaya.<br><small>'+esc(e.message)+'</small>');
+    feedEl.innerHTML = '<div id="msg">DB se data nahi aaya.<br><small>'+esc(e.message)+'</small></div>';
+    return;
   }
+  if(!mood){ openOverlay('moodPanel'); }
+  refreshFeed(true);
 }
 
-function buildChips(){
-  var cats = ['all'];
-  ALL.forEach(function(r){ if(r.category && cats.indexOf(r.category)<0) cats.push(r.category); });
-  chipsEl.innerHTML = cats.map(function(c){
-    return '<button class="chip'+(c===CURRENT?' on':'')+'" data-c="'+esc(c)+'">'+esc(c==='all'?'All':c)+'</button>';
-  }).join('');
-  chipsEl.querySelectorAll('.chip').forEach(function(b){
-    b.onclick = function(){ CURRENT = b.getAttribute('data-c'); buildChips(); render(); };
+/* ---------- chips + mood ---------- */
+function renderChips(){
+  $('chips').innerHTML = CHIPS.map((c,i)=>'<button class="chip'+(i===chipIdx?' on':'')+'" data-i="'+i+'">'+c.e+' '+esc(c.label)+'</button>').join('');
+  $('chips').querySelectorAll('.chip').forEach(b=>b.onclick=()=>{ chipIdx=Number(b.dataset.i); renderChips(); refreshFeed(true); });
+}
+function renderMoodButtons(){
+  $('moodBtns').innerHTML = MOODS.map(([k,l])=>'<button data-m="'+k+'">'+l+'</button>').join('');
+  $('moodBtns').querySelectorAll('button').forEach(b=>b.onclick=()=>setMood(b.dataset.m));
+}
+function setMood(m){
+  const prev = mood;
+  mood = m;
+  localStorage.setItem('sf_mood', m);
+  closeOverlay('moodPanel');
+  if(prev && prev!==m && sess.reels>0){ pendingMood = m; openCheckout(); return; }
+  newSession(m);
+  refreshFeed(true);
+}
+function newSession(m){ sess = { mood: m, cats: new Map(), reels: 0 }; }
+
+function openCheckout(){
+  const emo = {happy:'😊',sad:'😔',very_sad:'💔',focus:'🎯',bhakti:'🙏'}[sess.mood]||'🎯';
+  $('coQ').textContent = sess.reels+' reels ('+emo+' '+sess.mood+') ke baad — ab kaisa feel ho raha hai?';
+  openOverlay('checkoutPanel');
+}
+function answerCheckout(kind){
+  closeOverlay('checkoutPanel');
+  if(kind!=='skip' && sess.cats.size){
+    const cats = [...sess.cats.entries()].sort((a,b)=>b[1]-a[1]).slice(0,8).map(e=>e[0]);
+    recordCheckout(state, sess.mood, kind, cats);
+    saveState();
+    toast(kind==='better'?'Noted 🙏 accha laga':kind==='worse'?'Noted 🙏 agla feed better dunga':'Noted 🙏');
+  }
+  newSession(pendingMood || sess.mood);
+  if(pendingMood){ mood = pendingMood; localStorage.setItem('sf_mood', mood); pendingMood = null; }
+  refreshFeed(true);
+}
+function openOverlay(id){ $(id).classList.add('show'); }
+function closeOverlay(id){ $(id).classList.remove('show'); }
+
+/* ---------- feed ---------- */
+function refreshFeed(reset){
+  if(!candidates.length){ feedEl.innerHTML = '<div id="msg">Abhi koi short nahi hai.<br>Ingest chalao (scripts/ingest-innertube.mjs).</div>'; return; }
+  if(reset) seen = new Set();
+  const list = buildFeed(candidates, state, {
+    mood: mood || 'focus',
+    cats: CHIPS[chipIdx].cats,
+    limit: 60,
+    sessionCats: sess.cats,
+    fatigue: sess.reels > 40
+  }).filter(v => !seen.has(v.video_id));
+  list.forEach(v=>seen.add(v.video_id));
+  shown = list;
+  feedEl.innerHTML = '';
+  if(!list.length){ feedEl.innerHTML = '<div id="msg">Is filter me abhi kuch nahi hai. Chip badlo ya Reload karo.</div>'; return; }
+  list.forEach(v=>feedEl.appendChild(card(v)));
+  feedEl.scrollTop = 0;
+  attachObserver();
+}
+
+function card(v){
+  const el = document.createElement('section');
+  el.className = 'short';
+  el.dataset.id = v.video_id;
+  const liked = state.liked.includes(v.video_id);
+  const followed = state.follows.includes(v.channel);
+  el.innerHTML =
+    '<div class="ph" style="background-image:url(https://i.ytimg.com/vi/'+v.video_id+'/hqdefault.jpg)"></div>'+
+    '<div class="shade"></div>'+
+    '<div class="heart">❤️</div>'+
+    '<div class="info"><b>'+esc(v.title)+'</b><small>'+esc(v.channel)+(v.category?' · '+esc(v.category):'')+'</small></div>'+
+    '<div class="actions">'+
+      '<button class="act" data-a="follow"><span class="ico" id="fo-'+v.video_id+'">'+(followed?'✓':'+')+'</span><span>Follow</span></button>'+
+      '<button class="act" data-a="like"><span class="ico'+(liked?' on':'')+'" id="lk-'+v.video_id+'">'+(liked?'❤️':'🤍')+'</span><span>Like</span></button>'+
+      '<button class="act" data-a="more"><span class="ico">✨</span><span>More</span></button>'+
+      '<button class="act" data-a="less"><span class="ico">🚫</span><span>Less</span></button>'+
+      '<button class="act" data-a="share"><span class="ico">↗️</span><span>Share</span></button>'+
+      '<button class="act" data-a="sound"><span class="ico">🔇</span><span>Sound</span></button>'+
+    '</div>'+
+    '<div class="tap"></div>';
+  cardInfo.set(v.video_id, { el, iframe: null, t0: 0, muted: true, v });
+
+  let lastTap = 0;
+  el.querySelector('.tap').addEventListener('click', ()=>{
+    const now = Date.now();
+    if(now - lastTap < 300){ doubleTapLike(v.video_id); lastTap = 0; }
+    else { lastTap = now; }
   });
+  el.querySelectorAll('.act').forEach(b=>b.addEventListener('click', e=>{
+    e.stopPropagation();
+    action(v, b.dataset.a);
+  }));
+  return el;
 }
 
-function render(){
-  var list = CURRENT==='all' ? ALL : ALL.filter(function(r){return r.category===CURRENT;});
-  countEl.textContent = list.length ? (list.length+' shorts') : '';
-  if(!list.length){ showMsg('Is category me abhi koi short nahi hai.'); return; }
-  feedEl.innerHTML = list.map(function(r,i){
-    return '<section class="short" data-i="'+i+'">'+
-      '<iframe loading="lazy" allow="accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture" '+
-      'referrerpolicy="strict-origin-when-cross-origin" '+
-      'data-src="https://www.youtube-nocookie.com/embed/'+r.video_id+'?autoplay=0&playsinline=1&rel=0&modestbranding=1"></iframe>'+
-      '<div class="shade"></div>'+
-      '<div class="info"><b>'+esc(r.title)+'</b><small>'+esc(r.channel||'')+'</small></div>'+
-      '<a class="open" href="https://www.youtube.com/shorts/'+r.video_id+'" target="_blank" rel="noopener">YouTube pe kholo</a>'+
-    '</section>';
-  }).join('');
-  activate(0);
+function action(v, a){
+  if(a==='like') toggleLike(v.video_id);
+  else if(a==='more'){ signal(v,'more_like_this'); toast('Aise aur dikhayenge ✨'); }
+  else if(a==='less'){
+    signal(v,'not_interested');
+    const info = cardInfo.get(v.video_id);
+    if(info){ info.el.remove(); cardInfo.delete(v.video_id); }
+    toast('Kam dikhayenge 🚫');
+  }
+  else if(a==='share'){
+    const url = 'https://www.youtube.com/shorts/'+v.video_id;
+    signal(v,'share');
+    if(navigator.share) navigator.share({title:v.title,url}).catch(()=>{});
+    else if(navigator.clipboard) navigator.clipboard.writeText(url).then(()=>toast('Link copy ho gaya')).catch(()=>{});
+  }
+  else if(a==='follow'){
+    const i = state.follows.indexOf(v.channel);
+    if(i>=0) state.follows.splice(i,1); else state.follows.push(v.channel);
+    saveState();
+    const fo = $('fo-'+v.video_id); if(fo) fo.textContent = i>=0 ? '+' : '✓';
+    toast(i>=0 ? 'Unfollow' : 'Following ✓');
+  }
+  else if(a==='sound'){ toggleSound(v.video_id); }
 }
 
-/* Sirf visible short ka iframe load karo (bandwidth bachane ke liye) */
-var io = null;
-function activate(){
-  if(io) io.disconnect();
-  io = new IntersectionObserver(function(entries){
-    entries.forEach(function(en){
-      var f = en.target.querySelector('iframe');
-      if(!f) return;
-      if(en.isIntersecting && en.intersectionRatio>0.6){
-        if(!f.src) f.src = f.getAttribute('data-src');
-      }else if(!en.isIntersecting && f.src){
-        f.removeAttribute('src');
-      }
-    });
-  },{root:feedEl,threshold:[0,0.6]});
-  feedEl.querySelectorAll('.short').forEach(function(s){ io.observe(s); });
+function toggleLike(id){
+  const v = findVid(id); if(!v) return;
+  const on = state.liked.includes(id);
+  signal(v, on ? 'unlike' : 'like');
+  if(on) state.liked = state.liked.filter(x=>x!==id); else state.liked.push(id);
+  saveState();
+  const lk = $('lk-'+id); if(lk){ lk.textContent = on?'🤍':'❤️'; lk.classList.toggle('on', !on); }
+}
+function doubleTapLike(id){
+  const info = cardInfo.get(id);
+  if(info){ const h = info.el.querySelector('.heart'); h.classList.add('show'); setTimeout(()=>h.classList.remove('show'),500); }
+  if(!state.liked.includes(id)) toggleLike(id);
+}
+function toggleSound(id){
+  const info = cardInfo.get(id); if(!info) return;
+  info.muted = !info.muted;
+  const btn = info.el.querySelector('[data-a="sound"] .ico');
+  if(btn) btn.textContent = info.muted ? '🔇' : '🔊';
+  if(info.iframe) info.iframe.src = embedUrl(id, info.muted);
+}
+function findVid(id){ const info = cardInfo.get(id); return info ? info.v : shown.find(x=>x.video_id===id); }
+
+function embedUrl(id, muted){
+  return 'https://www.youtube-nocookie.com/embed/'+id+'?autoplay=1&mute='+(muted?1:0)+'&playsinline=1&rel=0&modestbranding=1&controls=0&loop=1&playlist='+id;
 }
 
-/* Keyboard: arrow keys se next/prev */
-document.addEventListener('keydown',function(e){
-  if(e.key!=='ArrowDown' && e.key!=='ArrowUp') return;
-  var h = feedEl.clientHeight;
-  feedEl.scrollBy({top: e.key==='ArrowDown'?h:-h, behavior:'smooth'});
+/* ---------- visibility: play the visible reel, count watch time ---------- */
+function attachObserver(){
+  if(observer) observer.disconnect();
+  observer = new IntersectionObserver(entries=>{
+    for(const en of entries){
+      const id = en.target.dataset.id;
+      const info = cardInfo.get(id); if(!info) continue;
+      if(en.isIntersecting && en.intersectionRatio >= 0.75){ enter(info); }
+      else if(!en.isIntersecting || en.intersectionRatio < 0.5){ leave(info); }
+    }
+  },{root:feedEl,threshold:[0,0.5,0.75]});
+  feedEl.querySelectorAll('.short').forEach(s=>observer.observe(s));
+}
+function enter(info){
+  if(info.t0) return;
+  info.t0 = Date.now();
+  sess.reels++;
+  const v = info.v;
+  const cur = v.category; if(cur) sess.cats.set(cur, (sess.cats.get(cur)||0)+1);
+  if(!info.iframe){
+    const f = document.createElement('iframe');
+    f.allow = 'autoplay; encrypted-media; picture-in-picture';
+    f.referrerPolicy = 'strict-origin-when-cross-origin';
+    f.src = embedUrl(v.video_id, info.muted);
+    info.el.querySelector('.tap').before(f);
+    info.iframe = f;
+  }
+  // stop other reels, so only one plays
+  for(const [id, o] of cardInfo) if(id!==v.video_id && o.iframe && o.t0){ leave(o); }
+}
+function leave(info){
+  if(!info.t0) return;
+  const ms = Date.now() - info.t0;
+  info.t0 = 0;
+  if(info.iframe){ info.iframe.src = 'about:blank'; info.iframe.remove(); info.iframe = null; }
+  if(ms >= 300) signal(info.v, 'watch_ms', ms);
+  if(ms >= 3000 && !state.watched.includes(info.v.video_id)){ state.watched.push(info.v.video_id); saveState(); }
+}
+
+/* ---------- wiring ---------- */
+$('btnSettings').onclick = ()=>{ renderStats(); openOverlay('settings'); };
+$('sClose').onclick = ()=>closeOverlay('settings');
+$('sReload').onclick = ()=>{ closeOverlay('settings'); refreshFeed(true); };
+$('sMood').onclick = ()=>{ closeOverlay('settings'); openOverlay('moodPanel'); };
+$('sReset').onclick = ()=>{
+  if(!confirm('Taste reset karna hai? (likes, follows, preferences sab hat jayega)')) return;
+  state = emptyState(); saveState(); closeOverlay('settings'); toast('Taste reset ho gaya'); refreshFeed(true);
+};
+document.querySelectorAll('#checkoutPanel button[data-k]').forEach(b=>b.onclick=()=>answerCheckout(b.dataset.k));
+document.addEventListener('keydown', e=>{
+  if(e.key==='ArrowDown'||e.key==='ArrowUp'){ const h = feedEl.clientHeight; feedEl.scrollBy({top:e.key==='ArrowDown'?h:-h,behavior:'smooth'}); }
 });
+function renderStats(){
+  const top = Object.entries(state.prefs).sort((a,b)=>b[1]-a[1]).slice(0,5).map(([c,s])=>c+':'+s).join(', ') || 'abhi kuch nahi';
+  $('stats').innerHTML = 'Mood: <b>'+esc(mood||'-')+'</b> · Slot: <b>'+currentTimeSlot()+'</b><br>'+
+    'Likes: '+state.liked.length+' · Follows: '+state.follows.length+' · Watched: '+state.watched.length+' · Signals: '+state.events+'<br>'+
+    'Top prefs: '+esc(top);
+}
 
-loadShorts();
+renderChips();
+renderMoodButtons();
+loadCandidates();
 </script>
 </body>
 </html>

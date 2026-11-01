@@ -11,8 +11,32 @@
 
 const BASE_URL = (process.env.LAYERBASE_URL || '').replace(/\/+$/, '');
 const WRITE_TOKEN = process.env.LAYERBASE_WRITE_TOKEN || '';
-const QUERIES = (process.env.QUERIES || 'funny hindi #shorts,motivation hindi #shorts,bollywood comedy #shorts,facts hindi #shorts,bhajan #shorts')
-  .split(',').map(s => s.trim()).filter(Boolean);
+// category -> search query (categories match the player's chips + algo groups)
+const DEFAULT_QUERIES = [
+  ['comedy', 'funny comedy #Shorts Hindi'],
+  ['hindi_film_comedy', 'Hindi film comedy scenes #Shorts Bollywood comedy'],
+  ['comedy_quotes', 'comedy quotes #Shorts Hindi funny status'],
+  ['motivation', 'Hindi motivation #Shorts success life motivational speech'],
+  ['psychology', 'human psychology facts #Shorts Hindi mind tricks'],
+  ['dark_psychology', 'dark psychology awareness #Shorts Hindi human behavior'],
+  ['facts', 'amazing facts #Shorts Hindi mindblowing'],
+  ['tech', 'tech facts gadgets #Shorts Hindi'],
+  ['science', 'science facts #Shorts Hindi'],
+  ['bhakti', 'bhakti devotional #Shorts Hindi spiritual'],
+  ['geeta', 'Bhagavad Gita gyan #Shorts Krishna Hindi'],
+  ['hanuman', 'Hanuman ji bhakti #Shorts Hindi spiritual'],
+  ['krishna', 'Shri Krishna gyan #Shorts Hindi bhakti'],
+  ['sad_songs', 'sad songs emotional #Shorts Hindi'],
+  ['shayari', 'shayari #Shorts Hindi emotional attitude'],
+  ['attitude', 'attitude status #Shorts Hindi swag'],
+  ['old_songs', 'old Hindi songs #Shorts evergreen Bollywood'],
+  ['peaceful_piano', 'peaceful piano music #Shorts relaxing calm'],
+  ['life_lessons', 'life lessons Hindi #Shorts wisdom success']
+];
+// optional override: QUERIES="category|query,category|query"
+const QUERIES = process.env.QUERIES
+  ? process.env.QUERIES.split(',').map(s => { const [c, ...q] = s.split('|'); return [c.trim(), q.join('|').trim()]; })
+  : DEFAULT_QUERIES;
 const PER_QUERY = parseInt(process.env.PER_QUERY || '40', 10);
 const MAX_SHORT_SEC = 60;
 
@@ -54,7 +78,7 @@ function parseSeconds(s) {
   return parts.reduce((acc, n) => acc * 60 + n, 0);
 }
 
-async function search(query) {
+async function search(query, category) {
   const res = await fetch(INNERTUBE_URL, {
     method: 'POST',
     headers: {
@@ -80,7 +104,7 @@ async function search(query) {
     const isShortUrl = it.isShort === true || JSON.stringify(it).includes('/shorts/');
     // Shorts filter: short URL ya <= 60s
     if (!isShortUrl && (sec === null || sec > MAX_SHORT_SEC)) continue;
-    out.push({ video_id: id, title: title.slice(0, 300), channel: channel.slice(0, 120), category: query.split(' ')[0].toLowerCase(), duration_sec: sec });
+    out.push({ video_id: id, title: title.slice(0, 300), channel: channel.slice(0, 120), category, duration_sec: sec });
     if (out.length >= PER_QUERY) break;
   }
   return out;
@@ -140,14 +164,14 @@ async function main() {
   if (!BASE_URL || !WRITE_TOKEN) { console.error('Set LAYERBASE_URL and LAYERBASE_WRITE_TOKEN'); process.exit(1); }
   await ensureSchema();
   let total = 0;
-  for (const q of QUERIES) {
+  for (const [cat, q] of QUERIES) {
     try {
-      const rows = await search(q);
+      const rows = await search(q, cat);
       const n = await upsert(rows);
       total += n;
-      console.log(`[ok] "${q}" -> ${rows.length} shorts`);
+      console.log(`[ok] ${cat} "${q}" -> ${rows.length} shorts`);
     } catch (e) {
-      console.error(`[fail] "${q}": ${e.message}`);
+      console.error(`[fail] ${cat} "${q}": ${e.message}`);
     }
     await new Promise(r => setTimeout(r, 1500)); // polite delay
   }
