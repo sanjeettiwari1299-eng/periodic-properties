@@ -27,3 +27,11 @@ node worker/test/smoke.mjs
 ```
 Runs the real `worker.js` against a local libSQL pipeline server (node:sqlite): player page, feed, signals,
 stats, and the scheduled() cron path.
+
+## index.html (player)
+`index.html` at repo root is the worker's own player (`APP_HTML`), generated from `worker.js` by
+`node worker/build-index.mjs`. Test: `node worker/test/index-matches-worker.mjs` (must match the worker output).
+
+- Served by the worker itself at `https://<worker>/` it works with no config (same origin).
+- Hosted on GitHub Pages it needs `window.SF_API_BASE = 'https://<worker>.workers.dev'` (line at the top of index.html)
+  and CORS on the worker. The worker currently sends no CORS headers, so cross-origin calls are blocked by the browser.
