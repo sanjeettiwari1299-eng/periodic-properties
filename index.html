@@ -105,7 +105,7 @@ async function loadShorts(){
   try{
     var rows = await dbQuery(
       'SELECT video_id, title, channel, category, duration_sec FROM '+CONFIG.TABLE+
-      ' ORDER BY added_at DESC LIMIT ?', [parseInt(CONFIG.LIMIT,10)]
+      ' ORDER BY (feed_rank IS NULL), feed_rank, added_at DESC LIMIT ?', [parseInt(CONFIG.LIMIT,10)]
     );
     ALL = rows.filter(function(r){return /^[A-Za-z0-9_-]{11}$/.test(r.video_id);});
     buildChips();
