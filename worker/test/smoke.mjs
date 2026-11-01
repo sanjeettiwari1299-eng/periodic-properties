@@ -3,7 +3,25 @@
 import http from 'node:http';
 import { DatabaseSync } from 'node:sqlite';
 import assert from 'node:assert/strict';
-import worker from '../worker.js';
+// Patch fetch BEFORE importing worker: sfFetch captures the native fetch at load time.
+const realFetch = globalThis.fetch;
+const innertubeMock = {
+  contents: [
+    { videoRenderer: { videoId: 'YTMOCK00001', title: { runs: [{ text: 'Funny Hindi comedy scene' }] }, ownerText: { runs: [{ text: 'Chan One', navigationEndpoint: { browseEndpoint: { browseId: 'UCmock1' } } }] }, lengthText: { simpleText: '0:42' } } },
+    { reelShelf: { items: [{ shortsLockupViewModel: { title: { content: 'Motivation Hindi reel' }, onTap: { innertubeCommand: { reelWatchEndpoint: { videoId: 'YTMOCK00002' } } } } }] } },
+    { videoRenderer: { videoId: 'YTMOCKLONG3', title: { simpleText: 'Long Hindi video' }, lengthText: { simpleText: '14:00' } } }
+  ]
+};
+let innertubeCalls = 0;
+globalThis.fetch = async (input, init) => {
+  const url = String(input && input.url ? input.url : input);
+  if (url.includes('youtubei/v1/search')) {
+    innertubeCalls++;
+    return new Response(JSON.stringify(innertubeMock), { status: 200, headers: { 'content-type': 'application/json' } });
+  }
+  return realFetch(input, init);
+};
+const worker = (await import('../worker.js')).default;
 
 const db = new DatabaseSync(':memory:');
 const enc = v => v === null || v === undefined ? { type: 'null' } : typeof v === 'number' ? { type: 'integer', value: String(Math.trunc(v)) } : { type: 'text', value: String(v) };
@@ -86,6 +104,17 @@ assert.match(cfeed.headers.get('content-type'), /application\/json/);
 const csig = await worker.fetch(new Request('http://localhost/api/signal', { method: 'POST', headers: { 'content-type': 'application/json', origin: 'https://sanjeettiwari1299-eng.github.io' }, body: JSON.stringify({ userId: 'smoke', videoId: 'VID00000000', event: 'skip', mood: 'focus' }) }), env, ctx);
 assert.equal(csig.headers.get('access-control-allow-origin'), '*');
 console.log('CORS ok');
+
+// 3c) InnerTube collector: real collect() path with the mocked InnerTube response
+const col = await call('/api/collect?secret=sekret', { method: 'POST' });
+console.log('collect:', col.status, col.text.slice(0, 200));
+assert.ok(innertubeCalls > 0, 'InnerTube was called');
+const feedAll = await call('/api/feed?userId=smoke2&mood=happy&limit=200');
+const ids = (feedAll.json.videos || []).map(v => v.id);
+assert.ok(ids.includes('YTMOCK00001'), 'InnerTube video stored and served');
+assert.ok(ids.includes('YTMOCK00002'), 'reel-shelf short stored and served');
+assert.ok(!ids.includes('YTMOCKLONG3'), 'long video filtered out (not a Short)');
+console.log('InnerTube collect -> stored & served OK');
 
 // 4) cron path: exact scheduled() handler (YouTube key absent => collect degrades, must not throw)
 await worker.scheduled({ cron: '17 */6 * * *' }, env, ctx);

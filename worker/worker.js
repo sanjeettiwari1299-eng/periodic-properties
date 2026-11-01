@@ -592,11 +592,11 @@ export default {
     })());
 
     // 2) client discovery — CPU bhaari (yt-dlp file download + parse). Cron me DEFAULT OFF.
-    if (String(env.TG_DISCOVERY_CRON || '0') === '1') {
+    if (tgEnabled(env) && String(env.TG_DISCOVERY_CRON || '0') === '1') {
       // flushSettings: this task runs *after* the handler returned, so without it
       // the new client list stays in the write-back buffer and is lost.
       ctx.waitUntil(refreshGrabClients(env, false).then(() => flushSettings(env)).catch(() => {}));
-    } else if (!everyMinute) {
+    } else if (tgEnabled(env) && !everyMinute) {
       ctx.waitUntil(refreshGrabClients(env, false).then(() => flushSettings(env)).catch(() => {}));
     }
 
@@ -926,7 +926,6 @@ async function canSpendQuota(env, units) { return (await getQuotaUsed(env)) + un
 async function spendQuota(env, units) { await setSetting(env, 'yt_quota_used', String((await getQuotaUsed(env)) + units)); }
 
 async function collect(env, opts = {}) {
-  if (!env.YOUTUBE_API_KEY) throw new Error('YOUTUBE_API_KEY missing');
   try { await setSetting(env, 'last_collect_at', String(Date.now())); } catch (e) {}
   const out = { youtubeSearchCalls: 0, youtubeInserted: 0, rssChecked: 0, rssInserted: 0, notes: [] };
   const maxSearchCalls = opts.maxSearchCalls ?? envInt(env, 'YT_SEARCH_PER_COLLECT', MAX_SEARCH_CALLS_PER_COLLECT, 0, 3);
@@ -992,6 +991,7 @@ function hindiQuery(q) { q = String(q || ''); return /\bhindi\b|हिंदी|
 function categorySearchQuery(cat) { const arr = QUERY_VARIANTS[cat] || [CATEGORIES[cat] || CATEGORIES.trending]; const idx = Math.floor(Date.now() / (6 * 60 * 60 * 1000)) % arr.length; return hindiQuery(arr[idx]); }
 function parseIsoDurationSeconds(iso) { const m=String(iso||'').match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/); return m ? (parseInt(m[1]||0)*3600 + parseInt(m[2]||0)*60 + parseInt(m[3]||0)) : 0; }
 async function verifyShortIds(env, ids) {
+  if (!env.YOUTUBE_API_KEY) return null; // InnerTube path: no key => no API verification, InnerTube filter already applied
   // Returns a Set of verified short ids, or null when verification could not run
   // (no quota / no budget / HTTP error). null means "do not filter", so a hiccup
   // never silently empties the collector.
@@ -1014,24 +1014,78 @@ async function verifyShortIds(env, ids) {
     return ok;
   } catch (e) { console.warn('verifyShortIds failed', e); return null; }
 }
-async function collectCategory(env, cat) {
-  const tokenKey = `yt_page_${cat}`;
-  const pageToken = await getSetting(env, tokenKey, '');
-  const params = new URLSearchParams({ part:'snippet', type:'video', videoDuration:'short', videoEmbeddable:'true', maxResults:'50', q:categorySearchQuery(cat), key:env.YOUTUBE_API_KEY, order:'relevance', relevanceLanguage:'hi', regionCode:'IN' });
-  if (pageToken) params.set('pageToken', pageToken);
-  let res;
-  try { res = await sfFetch('https://www.googleapis.com/youtube/v3/search?' + params.toString()); } catch(e) { return { calls:0, inserted:0, error:'YouTube fetch failed: '+String(e.message||e).slice(0,120) }; }
-  await spendQuota(env, YT_SEARCH_COST);
-  if (!res.ok) { if (res.status === 403 || res.status === 429) { try { await setSetting(env, 'yt_backoff_until', String(Date.now() + 90 * 60 * 1000)); } catch (e) {} } return { calls:1, inserted:0, error:`YouTube ${res.status}` }; }
+// ───────────────────────── InnerTube (YouTube web API) ─────────────────────────
+// Server-side search, no API key, no quota. Walks the whole response because the layout changes.
+const IT_SEARCH_URL = 'https://www.youtube.com/youtubei/v1/search?prettyPrint=false';
+const IT_CLIENT = { clientName: 'WEB', clientVersion: '2.20250101.00.00', hl: 'hi', gl: 'IN' };
+const IT_MAX_SHORT_SEC = 60;
+function itTxt(t) {
+  if (!t) return '';
+  if (typeof t.simpleText === 'string') return t.simpleText;
+  if (Array.isArray(t.runs)) return t.runs.map(r => r.text || '').join('');
+  if (typeof t.content === 'string') return t.content;
+  return '';
+}
+function itIsId(s) { return typeof s === 'string' && /^[A-Za-z0-9_-]{11}$/.test(s); }
+function itParseSeconds(s) {
+  if (!s) return null;
+  const p = String(s).split(':').map(n => parseInt(n, 10));
+  return p.some(isNaN) ? null : p.reduce((a, n) => a * 60 + n, 0);
+}
+function itCollect(node, out = [], ctxTitle = null) {
+  if (Array.isArray(node)) { for (const x of node) itCollect(x, out, ctxTitle); return out; }
+  if (node && typeof node === 'object') {
+    const title = node.title || node.headline;
+    const t = title ? (typeof title === 'string' ? title : itTxt(title)) : ctxTitle;
+    if (itIsId(node.videoId) && title) out.push({ node, id: node.videoId, title: t, short: false });
+    const rv = node.reelWatchEndpoint && node.reelWatchEndpoint.videoId;
+    if (itIsId(rv) && t) out.push({ node, id: rv, title: t, short: true });
+    for (const k of Object.keys(node)) itCollect(node[k], out, t || ctxTitle);
+  }
+  return out;
+}
+async function innertubeSearch(query) {
+  const res = await sfFetch(IT_SEARCH_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120 Safari/537.36',
+      'Accept-Language': 'hi-IN,hi;q=0.9,en;q=0.8', Origin: 'https://www.youtube.com'
+    },
+    body: JSON.stringify({ context: { client: IT_CLIENT }, query })
+  });
+  if (!res.ok) throw new Error('InnerTube ' + res.status);
   const data = await res.json();
-  await setSetting(env, tokenKey, data.nextPageToken || '');
-  const raw = (data.items || []).filter(it => it?.id?.videoId);
+  const seen = new Set(), out = [];
+  for (const it of itCollect(data)) {
+    if (seen.has(it.id)) continue;
+    seen.add(it.id);
+    const node = it.node;
+    const owner = (node.ownerText || node.shortBylineText || node.longBylineText || {});
+    const ownerRun = Array.isArray(owner.runs) ? owner.runs[0] : null;
+    const channelId = (ownerRun && ownerRun.navigationEndpoint && ownerRun.navigationEndpoint.browseEndpoint && ownerRun.navigationEndpoint.browseEndpoint.browseId) || '';
+    const channelName = itTxt(owner);
+    const sec = itParseSeconds(itTxt(node.lengthText));
+    const shortUrl = JSON.stringify(node).includes('/shorts/');
+    if (!it.short && !shortUrl && (sec === null || sec > IT_MAX_SHORT_SEC)) continue; // Shorts only
+    out.push({ id: it.id, title: it.title, channel_id: channelId, channel_name: channelName });
+  }
+  return out;
+}
+
+async function collectCategory(env, cat) {
+  let found;
+  try { found = await innertubeSearch(categorySearchQuery(cat)); }
+  catch (e) { return { calls: 0, inserted: 0, error: 'InnerTube failed: ' + String(e.message || e).slice(0, 120) }; }
+  await spendQuota(env, YT_SEARCH_COST);
+  const raw = found.map(f => ({ id: { videoId: f.id }, snippet: { title: f.title, channelId: f.channel_id, channelTitle: f.channel_name } }));
   const shortIds = await verifyShortIds(env, raw.map(it => it.id.videoId));
   const videos = raw.filter(it => !shortIds || shortIds.has(it.id.videoId)).map(it => ({
-    video_id: cleanVideoId(it.id.videoId), title: decodeHtml(it.snippet?.title || ''), channel_id: it.snippet?.channelId || '', channel_name: decodeHtml(it.snippet?.channelTitle || ''), thumb: it.snippet?.thumbnails?.high?.url || it.snippet?.thumbnails?.medium?.url || `https://i.ytimg.com/vi/${it.id.videoId}/hqdefault.jpg`, source:'youtube_api', category:cat, added_at:Date.now()
+    video_id: cleanVideoId(it.id.videoId), title: decodeHtml(it.snippet.title || ''), channel_id: it.snippet.channelId || '', channel_name: decodeHtml(it.snippet.channelTitle || ''),
+    thumb: `https://i.ytimg.com/vi/${it.id.videoId}/hqdefault.jpg`, source: 'innertube', category: cat, added_at: Date.now()
   })).filter(v => v.video_id && !isBlockedContent(v) && isLikelyHindiFocused(v));
   const inserted = await insertVideosAndChannels(env, videos);
-  return { calls:1, inserted };
+  return { calls: 1, inserted };
 }
 async function collectRss(env, limit) {
   // Trusted RSS source = channels that at least one user follows.

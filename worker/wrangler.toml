@@ -1,16 +1,24 @@
-# Cloudflare Worker — exact copy of worker.js (no code changes).
-# Deploy: npx wrangler deploy  (from this folder)
+# Cloudflare Worker: worker.js (feed + store + InnerTube collector).
+# Deploy: cd worker && npx wrangler deploy
+#
 # Secrets (wrangler secret put ...):
-#   TURSO_AUTH_TOKEN      = LayerBase libSQL auth token
-#   CRON_SECRET           = any long random string (admin endpoints)
-#   YOUTUBE_API_KEY       = optional (collect uses YouTube Data API)
-# Vars:
-#   TURSO_DATABASE_URL    = https://<host>.cloud.layerbase.dev  (LayerBase libSQL URL; libsql:// also accepted)
-# Telegram/grab (TG_BOT_TOKEN, TG_CHAT_ID, YT cookies) are NOT set => the worker runs without them.
+#   TURSO_AUTH_TOKEN   = LayerBase libSQL auth token
+#   CRON_SECRET        = long random string (protects /api/collect, /api/cleanup, ...)
+#
+# Vars: TURSO_DATABASE_URL = https://<host>.cloud.layerbase.dev  (libsql:// also accepted)
+#
+# Collector: InnerTube (no YouTube API key). Runs every 30 min.
+# Telegram / grab are NOT configured (TG_BOT_TOKEN, TG_CHAT_ID unset) => no media download at all.
 
 name = "shortsfire"
 main = "worker.js"
 compatibility_date = "2025-01-01"
 
 [triggers]
-crons = ["17 */6 * * *", "* * * * *"]
+crons = ["*/30 * * * *"]
+
+[vars]
+YT_COLLECT_EVERY_MIN = "25"      # collect gap (cron is 30 min; 25 avoids skipping a tick)
+YT_SEARCH_THROTTLE_MIN = "25"    # min gap between InnerTube searches
+YT_SEARCH_PER_COLLECT = "3"      # searches per tick (worker caps this at 3)
+YT_DAILY_QUOTA = "1000000"       # InnerTube has no quota; keeps the internal guard out of the way
