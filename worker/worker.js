@@ -541,8 +541,24 @@ function sfErrorResponse(e) {
   }, budget ? 503 : 500);
 }
 
+// CORS: index.html GitHub Pages par host ho to browser cross-origin call karta hai.
+// Sirf headers add hote hain; koi logic nahi badla.
+const SF_CORS = {
+  'access-control-allow-origin': '*',
+  'access-control-allow-methods': 'GET, POST, OPTIONS',
+  'access-control-allow-headers': 'content-type, range',
+  'access-control-expose-headers': 'Content-Length, Content-Range, Accept-Ranges',
+  'access-control-max-age': '86400'
+};
+function sfWithCors(res) {
+  const h = new Headers(res.headers);
+  for (const k of Object.keys(SF_CORS)) h.set(k, SF_CORS[k]);
+  return new Response(res.body, { status: res.status, statusText: res.statusText, headers: h });
+}
+
 export default {
   async fetch(request, env, ctx) {
+    if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: SF_CORS });
     sfBudgetStart(env);
     let res;
     try {
@@ -553,7 +569,7 @@ export default {
     // settings are buffered during the request (one INSERT batch instead of N
     // round-trips) — persist them before the response leaves.
     await flushSettings(env).catch(() => {});
-    return res;
+    return sfWithCors(res);
   },
 
   async scheduled(event, env, ctx) {
