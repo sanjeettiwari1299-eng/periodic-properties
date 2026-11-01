@@ -74,6 +74,19 @@ console.log('signal like:', sig.status, sig.text.slice(0, 120));
 const stats = await call('/api/stats?userId=smoke');
 console.log('stats:', stats.status, stats.text.slice(0, 200));
 
+// 3b) CORS: Pages-hosted index.html calls the worker cross-origin
+const pre = await worker.fetch(new Request('http://localhost/api/signal', { method: 'OPTIONS', headers: { origin: 'https://sanjeettiwari1299-eng.github.io', 'access-control-request-method': 'POST', 'access-control-request-headers': 'content-type' } }), env, ctx);
+assert.equal(pre.status, 204);
+assert.equal(pre.headers.get('access-control-allow-origin'), '*');
+assert.match(pre.headers.get('access-control-allow-methods'), /POST/);
+const cfeed = await worker.fetch(new Request('http://localhost/api/feed?userId=smoke&mood=focus&limit=5', { headers: { origin: 'https://sanjeettiwari1299-eng.github.io' } }), env, ctx);
+assert.equal(cfeed.status, 200);
+assert.equal(cfeed.headers.get('access-control-allow-origin'), '*');
+assert.match(cfeed.headers.get('content-type'), /application\/json/);
+const csig = await worker.fetch(new Request('http://localhost/api/signal', { method: 'POST', headers: { 'content-type': 'application/json', origin: 'https://sanjeettiwari1299-eng.github.io' }, body: JSON.stringify({ userId: 'smoke', videoId: 'VID00000000', event: 'skip', mood: 'focus' }) }), env, ctx);
+assert.equal(csig.headers.get('access-control-allow-origin'), '*');
+console.log('CORS ok');
+
 // 4) cron path: exact scheduled() handler (YouTube key absent => collect degrades, must not throw)
 await worker.scheduled({ cron: '17 */6 * * *' }, env, ctx);
 await new Promise(r => setTimeout(r, 300));
