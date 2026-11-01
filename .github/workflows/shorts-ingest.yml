@@ -1,0 +1,25 @@
+name: Shorts ingest and rank
+
+on:
+  schedule:
+    - cron: '17 */6 * * *'   # every 6 hours (UTC)
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ingest:
+    runs-on: ubuntu-latest
+    env:
+      LAYERBASE_URL: ${{ secrets.LAYERBASE_URL }}
+      LAYERBASE_WRITE_TOKEN: ${{ secrets.LAYERBASE_WRITE_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Ingest from InnerTube
+        run: node scripts/ingest-innertube.mjs
+      - name: Rank feed
+        run: node scripts/feed-rank.mjs
