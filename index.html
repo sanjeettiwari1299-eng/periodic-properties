@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Shorts Feed</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:#050507;color:#fff;font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;overflow:hidden}
+#topbar{position:fixed;top:0;left:0;right:0;z-index:50;padding:12px 12px 8px;background:linear-gradient(#050507,rgba(5,5,7,0))}
+#title{font-weight:800;font-size:20px;margin-bottom:8px}
+#title span{color:#ff375f}
+#chips{display:flex;gap:7px;overflow-x:auto;scrollbar-width:none}
+#chips::-webkit-scrollbar{display:none}
+.chip{flex:0 0 auto;border:1px solid #2a2a38;background:#14141c;color:#ddd;border-radius:999px;padding:6px 12px;font-size:13px;cursor:pointer}
+.chip.on{background:linear-gradient(135deg,#ff2d4b,#ff6b2b);border-color:transparent;color:#fff;font-weight:700}
+#feed{height:100vh;overflow-y:scroll;scroll-snap-type:y mandatory;scrollbar-width:none}
+#feed::-webkit-scrollbar{display:none}
+.short{height:100vh;width:100%;position:relative;scroll-snap-align:start;scroll-snap-stop:always;background:#000;overflow:hidden}
+.short iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+.short .info{position:absolute;left:14px;right:70px;bottom:calc(24px + env(safe-area-inset-bottom));z-index:5;pointer-events:none;text-shadow:0 1px 4px #000}
+.short .info b{display:block;font-size:16px;line-height:1.35;margin-bottom:6px}
+.short .info small{color:#ddd;font-size:13px}
+.short .shade{position:absolute;inset:0;z-index:2;pointer-events:none;background:linear-gradient(to top,rgba(0,0,0,.75),rgba(0,0,0,0) 40%)}
+.short .open{position:absolute;right:12px;bottom:24px;z-index:6;background:#ffffff1a;color:#fff;border:1px solid #fff4;border-radius:10px;padding:8px 10px;font-size:12px;text-decoration:none}
+#msg{height:100vh;display:flex;align-items:center;justify-content:center;padding:28px;text-align:center;color:#aaa;line-height:1.7;font-size:15px}
+#msg code{background:#14141c;padding:2px 6px;border-radius:6px;color:#ffb3c1}
+#count{position:fixed;right:12px;top:14px;z-index:60;font-size:12px;color:#888}
+</style>
+</head>
+<body>
+<div id="topbar">
+  <div id="title">Shorts<span>Fire</span></div>
+  <div id="chips"></div>
+</div>
+<div id="count"></div>
+<div id="feed"></div>
+
+<script>
+/* ============ CONFIG ============
+   LayerBase libSQL (managed, HTTP). LAYERBASE_URL = instance ka https URL,
+   LAYERBASE_TOKEN = auth token. Ye browser me dikhenge, isliye read-only token use karo.
+*/
+var CONFIG = {
+  LAYERBASE_URL: '',     // e.g. https://<your-host>.cloud.layerbase.dev
+  LAYERBASE_TOKEN: '',   // read-only auth token
+  TABLE: 'shorts',
+  LIMIT: 300
+};
+
+var feedEl = document.getElementById('feed');
+var chipsEl = document.getElementById('chips');
+var countEl = document.getElementById('count');
+var ALL = [];
+var CURRENT = 'all';
+
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+
+function showMsg(html){
+  feedEl.innerHTML = '<div id="msg">'+html+'</div>';
+}
+
+/* LayerBase libSQL: Hrana v2 pipeline (/v2/pipeline), same as @libsql/client over HTTP */
+function sqlArg(v){
+  if(v===null||v===undefined) return {type:'null'};
+  if(typeof v==='number') return Number.isFinite(v)?{type:'integer',value:String(Math.trunc(v))}:{type:'null'};
+  return {type:'text',value:String(v)};
+}
+function cellVal(c){ if(c==null) return null; if(typeof c==='object'&&'value' in c) return c.value; return c; }
+
+async function dbQuery(sql, args){
+  var base = String(CONFIG.LAYERBASE_URL||'').replace(/\/+$/,'');
+  var res = await fetch(base+'/v2/pipeline', {
+    method: 'POST',
+    headers: {
+      'Authorization': 'Bearer '+CONFIG.LAYERBASE_TOKEN,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({requests:[
+      {type:'execute', stmt:{sql:sql, args:(args||[]).map(sqlArg)}},
+      {type:'close'}
+    ]})
+  });
+  var text = await res.text();
+  if(!res.ok) throw new Error('DB '+res.status+': '+text.slice(0,200));
+  var data = JSON.parse(text);
+  var bad = (data.results||[]).find(function(r){return r.type==='error';});
+  if(bad) throw new Error((bad.error&&bad.error.message)||'query error');
+  var result = data.results[0].response.result;
+  var cols = (result.cols||[]).map(function(c){return c.name;});
+  return (result.rows||[]).map(function(row){
+    var o = {};
+    row.forEach(function(c,i){ o[cols[i]||i] = cellVal(c); });
+    return o;
+  });
+}
+
+async function loadShorts(){
+  if(!CONFIG.LAYERBASE_URL || !CONFIG.LAYERBASE_TOKEN){
+    showMsg('LayerBase connect nahi hai.<br>index.html me <code>CONFIG.LAYERBASE_URL</code> aur <code>CONFIG.LAYERBASE_TOKEN</code> bharo.');
+    countEl.textContent = '';
+    return;
+  }
+  showMsg('Loading...');
+  try{
+    var rows = await dbQuery(
+      'SELECT video_id, title, channel, category, duration_sec FROM '+CONFIG.TABLE+
+      ' ORDER BY added_at DESC LIMIT ?', [parseInt(CONFIG.LIMIT,10)]
+    );
+    ALL = rows.filter(function(r){return /^[A-Za-z0-9_-]{11}$/.test(r.video_id);});
+    buildChips();
+    render();
+  }catch(e){
+    showMsg('DB se data nahi aaya.<br><small>'+esc(e.message)+'</small>');
+  }
+}
+
+function buildChips(){
+  var cats = ['all'];
+  ALL.forEach(function(r){ if(r.category && cats.indexOf(r.category)<0) cats.push(r.category); });
+  chipsEl.innerHTML = cats.map(function(c){
+    return '<button class="chip'+(c===CURRENT?' on':'')+'" data-c="'+esc(c)+'">'+esc(c==='all'?'All':c)+'</button>';
+  }).join('');
+  chipsEl.querySelectorAll('.chip').forEach(function(b){
+    b.onclick = function(){ CURRENT = b.getAttribute('data-c'); buildChips(); render(); };
+  });
+}
+
+function render(){
+  var list = CURRENT==='all' ? ALL : ALL.filter(function(r){return r.category===CURRENT;});
+  countEl.textContent = list.length ? (list.length+' shorts') : '';
+  if(!list.length){ showMsg('Is category me abhi koi short nahi hai.'); return; }
+  feedEl.innerHTML = list.map(function(r,i){
+    return '<section class="short" data-i="'+i+'">'+
+      '<iframe loading="lazy" allow="accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture" '+
+      'referrerpolicy="strict-origin-when-cross-origin" '+
+      'data-src="https://www.youtube-nocookie.com/embed/'+r.video_id+'?autoplay=0&playsinline=1&rel=0&modestbranding=1"></iframe>'+
+      '<div class="shade"></div>'+
+      '<div class="info"><b>'+esc(r.title)+'</b><small>'+esc(r.channel||'')+'</small></div>'+
+      '<a class="open" href="https://www.youtube.com/shorts/'+r.video_id+'" target="_blank" rel="noopener">YouTube pe kholo</a>'+
+    '</section>';
+  }).join('');
+  activate(0);
+}
+
+/* Sirf visible short ka iframe load karo (bandwidth bachane ke liye) */
+var io = null;
+function activate(){
+  if(io) io.disconnect();
+  io = new IntersectionObserver(function(entries){
+    entries.forEach(function(en){
+      var f = en.target.querySelector('iframe');
+      if(!f) return;
+      if(en.isIntersecting && en.intersectionRatio>0.6){
+        if(!f.src) f.src = f.getAttribute('data-src');
+      }else if(!en.isIntersecting && f.src){
+        f.removeAttribute('src');
+      }
+    });
+  },{root:feedEl,threshold:[0,0.6]});
+  feedEl.querySelectorAll('.short').forEach(function(s){ io.observe(s); });
+}
+
+/* Keyboard: arrow keys se next/prev */
+document.addEventListener('keydown',function(e){
+  if(e.key!=='ArrowDown' && e.key!=='ArrowUp') return;
+  var h = feedEl.clientHeight;
+  feedEl.scrollBy({top: e.key==='ArrowDown'?h:-h, behavior:'smooth'});
+});
+
+loadShorts();
+</script>
+</body>
+</html>
