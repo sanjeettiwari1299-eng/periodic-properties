@@ -1,5 +1,5 @@
 # Collector: started every 30 min by cron-job.org (repository_dispatch "collect").
-# Fetches Shorts via InnerTube, stores them in LayerBase libSQL, and commits data/shorts.json for the page.
+# Fetches Shorts via InnerTube, stores them in LayerBase libSQL, and commits data/feed.json for the page.
 name: Collect shorts
 
 on:
@@ -32,9 +32,9 @@ jobs:
         run: |
           git config user.name "shorts-collector"
           git config user.email "actions@users.noreply.github.com"
-          git add data/shorts.json
+          git add data/feed.json
           if git diff --cached --quiet; then
-            echo "No change in data/shorts.json"
+            echo "No change in data/feed.json"
           else
             git commit -m "chore: update shorts ($(date -u +%Y-%m-%dT%H:%MZ))"
             git push origin HEAD:${GITHUB_REF_NAME}

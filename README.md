@@ -1,8 +1,14 @@
 # ShortsFire (static, GitHub-only)
 
-- **Site**: `index.html` (GitHub Pages). Reads `data/shorts.json` and plays each short as a YouTube embed. No worker or API call.
-- **Collector**: `scripts/collect.mjs` runs in GitHub Actions (`.github/workflows/collect.yml`). It searches YouTube via InnerTube (no API key), keeps Shorts, stores them in your LayerBase libSQL DB, and commits `data/shorts.json`.
+- **Site**: `index.html` (GitHub Pages) + `js/algo.js`. Loads `data/feed.json`, ranks it in the browser, and plays each short as a YouTube embed. No worker or API call.
+- **Collector**: `scripts/collect.mjs` runs in GitHub Actions (`.github/workflows/collect.yml`). Every run:
+  1. InnerTube searches (3 per run, rotating through all categories and query variants). Shorts only, with the worker's content filters.
+  2. RSS refresh of 8 known channels per run (least recently checked first).
+  3. Stores everything in LayerBase libSQL (`videos`, `channels`), with caps: 100k videos, 25k channels. The oldest and excluded-category rows are pruned.
+  4. Exports the newest 3000 shorts to `data/feed.json` (committed only when it changes).
 - **Schedule**: cron-job.org calls the GitHub API every 30 minutes (below).
+- **Per-user ranking**: the same algorithm as the worker (`js/algo.js`: category/keyword/channel/mood/slot prefs, title-quality penalty, mixFeed buckets, diversify). Each user's signals (watch time, like, skip, not interested, follow) are stored in the browser's localStorage, because a static page cannot write per-user rows to the DB.
+- **Not ported** (need server-side or cross-user data): global `video_quality` learned from all users, mood-effect aggregates, view/like-based engagement boosts, and the server-side Telegram/yt-cookie paths. The per-user bandit is a mean-based approximation (no Thompson sampling).
 
 ## One-time setup
 1. **Repo secrets** (Settings → Secrets and variables → Actions):
@@ -19,11 +25,10 @@
 
 ## Run locally
 ```bash
-node --test scripts/collect.test.mjs      # tests (no network)
+node --test scripts/collect.test.mjs js/algo.test.mjs   # tests (no network)
 TURSO_DATABASE_URL=... TURSO_AUTH_TOKEN=... node scripts/collect.mjs
 ```
 
 ## Notes
-- The collector only writes `data/shorts.json` when its content changes.
-- The browser ranking is simpler than the worker's full algorithm: recency, category likes/skips (stored in localStorage), and no-repeat filtering.
+- The collector only commits `data/feed.json` when its content changes.
 - `worker/` is the older Cloudflare Worker version and is not used by this site.

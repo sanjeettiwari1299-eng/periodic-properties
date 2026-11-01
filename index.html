@@ -8,135 +8,193 @@
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%;background:#000;color:#fff;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;overflow:hidden}
 #stage{position:fixed;inset:0;display:flex;align-items:center;justify-content:center}
-#frameWrap{position:relative;width:min(420px,100vw);height:min(100dvh,calc(min(420px,100vw)*16/9));background:#111;border-radius:0}
+#frameWrap{position:relative;width:min(420px,100vw);height:100dvh;background:#111;overflow:hidden}
 @media (min-width:760px){#frameWrap{border-radius:14px;height:min(92vh,800px)}}
 #frame{width:100%;height:100%;border:0;display:block}
-.top{position:absolute;top:0;left:0;right:0;padding:10px 12px;display:flex;gap:8px;align-items:center;background:linear-gradient(#000a,#0000);z-index:2}
+.top{position:absolute;top:0;left:0;right:0;padding:10px 12px;display:flex;flex-direction:column;gap:8px;background:linear-gradient(#000b,#0000);z-index:2}
+.row{display:flex;gap:8px;align-items:center}
 .logo{font-weight:800;font-size:16px;margin-right:auto}
-.chips{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding-bottom:4px;max-width:100%}
+select{background:rgba(0,0,0,.5);color:#fff;border:1px solid #fff4;border-radius:999px;padding:5px 8px;font-size:12px}
+.chips{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;max-width:100%}
 .chip{flex:none;background:rgba(0,0,0,.45);border:1px solid #fff3;color:#fff;border-radius:999px;padding:5px 10px;font-size:12px;cursor:pointer}
 .chip.on{background:#fff;color:#000}
-.bottom{position:absolute;left:0;right:0;bottom:0;padding:40px 14px 14px;background:linear-gradient(#0000,#000c);z-index:2;pointer-events:none}
+.bottom{position:absolute;left:0;right:0;bottom:0;padding:50px 14px 14px;background:linear-gradient(#0000,#000d);z-index:2;pointer-events:none}
 .title{font-size:14px;line-height:1.4;margin-bottom:4px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .meta{font-size:12px;opacity:.75}
-.bar{position:absolute;right:10px;bottom:90px;display:flex;flex-direction:column;gap:12px;z-index:3}
+.bar{position:absolute;right:10px;bottom:110px;display:flex;flex-direction:column;gap:10px;z-index:3}
 .btn{width:46px;height:46px;border-radius:50%;border:1px solid #fff4;background:rgba(0,0,0,.45);color:#fff;font-size:18px;cursor:pointer}
 .btn:active{transform:scale(.94)}
-.nav{position:absolute;left:10px;bottom:90px;display:flex;gap:8px;z-index:3}
+.btn.on{background:#fff;color:#000}
+.nav{position:absolute;left:10px;bottom:110px;display:flex;gap:8px;z-index:3}
 .msg{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;padding:24px;font-size:15px;line-height:1.5;opacity:.85}
-.ext{position:absolute;top:58px;right:12px;font-size:12px;color:#fff;opacity:.8;z-index:3}
+.ext{position:absolute;top:110px;right:12px;font-size:12px;color:#fff;opacity:.8;z-index:3}
+#toast{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);background:#000c;padding:8px 14px;border-radius:999px;font-size:13px;opacity:0;transition:opacity .2s;z-index:4;pointer-events:none}
 </style>
 </head>
 <body>
 <div id="stage">
   <div id="frameWrap">
     <div class="top">
-      <div class="logo">ShortsFire</div>
+      <div class="row">
+        <div class="logo">ShortsFire</div>
+        <select id="mood" title="Mood">
+          <option value="happy">Happy</option>
+          <option value="focus">Focus</option>
+          <option value="sad">Sad</option>
+          <option value="very_sad">Very sad</option>
+          <option value="bhakti">Bhakti</option>
+        </select>
+      </div>
       <div class="chips" id="chips"></div>
     </div>
     <iframe id="frame" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>
     <div class="msg" id="msg" hidden></div>
-    <a class="ext" id="ext" target="_blank" rel="noopener">YouTube par kholo ↗</a>
+    <a class="ext" id="ext" target="_blank" rel="noopener">YouTube ↗</a>
     <div class="bottom"><div class="title" id="title"></div><div class="meta" id="meta"></div></div>
     <div class="bar">
-      <button class="btn" id="like" title="Pasand (is category ko upar)">♥</button>
-      <button class="btn" id="skip" title="Kam dikhao (is category ko neeche)">✕</button>
+      <button class="btn" id="like" title="Pasand (L)">♥</button>
+      <button class="btn" id="follow" title="Channel follow">★</button>
+      <button class="btn" id="notint" title="Not interested">⊘</button>
+      <button class="btn" id="skip" title="Skip">✕</button>
     </div>
     <div class="nav">
       <button class="btn" id="prev" title="Pichla">‹</button>
       <button class="btn" id="next" title="Agla">›</button>
     </div>
+    <div id="toast"></div>
   </div>
 </div>
-<script>
-(function () {
-  var DATA_URL = 'data/shorts.json';
-  var PREF_KEY = 'sf_cat_prefs', SEEN_KEY = 'sf_seen', SEEN_MAX = 400;
-  var items = [], filter = 'all', current = null, history = [], lastCats = [];
+<script type="module">
+import * as A from './js/algo.js';
 
-  var $ = function (id) { return document.getElementById(id); };
-  var frame = $('frame'), msg = $('msg');
+const FEED_URL = 'data/feed.json';
+const STATE_KEY = 'sf_state_v1', MOOD_KEY = 'sf_mood', SEEN_MAX = 400;
+const $ = id => document.getElementById(id);
+const frame = $('frame'), msg = $('msg');
 
-  function load(key, def) { try { return JSON.parse(localStorage.getItem(key)) || def; } catch (e) { return def; } }
-  function save(key, v) { try { localStorage.setItem(key, JSON.stringify(v)); } catch (e) {} }
-  var prefs = load(PREF_KEY, {});
-  var seen = load(SEEN_KEY, []);
+let feed = [], queue = [], history = [], current = null, filter = null;
+let st = loadState();
+let moodVal = localStorage.getItem(MOOD_KEY) || 'happy';
+$('mood').value = moodVal;
 
-  function label(cat) { return cat ? cat.replace(/_/g, ' ') : 'mix'; }
+function loadState() {
+  try { return Object.assign(A.emptyState(), JSON.parse(localStorage.getItem(STATE_KEY)) || {}); } catch (e) { return A.emptyState(); }
+}
+function saveState() { try { localStorage.setItem(STATE_KEY, JSON.stringify(st)); } catch (e) {} }
+function toast(t) { const el = $('toast'); el.textContent = t; el.style.opacity = 1; clearTimeout(toast._t); toast._t = setTimeout(() => el.style.opacity = 0, 900); }
+function label(c) { return c ? c.replace(/_/g, ' ') : 'mix'; }
 
-  function buildChips() {
-    var cats = {};
-    items.forEach(function (it) { if (it.category) cats[it.category] = (cats[it.category] || 0) + 1; });
-    var list = ['all'].concat(Object.keys(cats).sort());
-    var box = $('chips'); box.innerHTML = '';
-    list.forEach(function (c) {
-      var b = document.createElement('button');
-      b.className = 'chip' + (c === filter ? ' on' : '');
-      b.textContent = c === 'all' ? 'All' : label(c);
-      b.onclick = function () { filter = c; buildChips(); pickNext(true); };
-      box.appendChild(b);
-    });
+// ── playback signals (YouTube IFrame postMessage; enablejsapi=1) ──
+let playerInfo = { cur: 0, dur: 0, state: -1 };
+window.addEventListener('message', ev => {
+  if (ev.origin !== 'https://www.youtube.com' && ev.origin !== 'https://www.youtube-nocookie.com') return;
+  let d; try { d = typeof ev.data === 'string' ? JSON.parse(ev.data) : ev.data; } catch (e) { return; }
+  if (!d || typeof d !== 'object') return;
+  if (d.event === 'infoDelivery' && d.info) {
+    if (typeof d.info.currentTime === 'number') playerInfo.cur = Math.max(playerInfo.cur, d.info.currentTime);
+    if (typeof d.info.duration === 'number' && d.info.duration > 0) playerInfo.dur = d.info.duration;
+    if (typeof d.info.playerState === 'number') {
+      playerInfo.state = d.info.playerState;
+      if (d.info.playerState === 0 && current) { finishCurrent(true); playNext(false); }
+    }
   }
-
-  // Simple ranking: recent shorts first, category preference (likes/skips), skip recently seen, avoid repeating a category.
-  function score(it, now) {
-    var ageDays = Math.max(0, (now - (it.added_at || 0)) / 86400000);
-    var s = 1 / (1 + ageDays / 3);
-    s += 2 * (prefs[it.category] || 0);
-    if (lastCats.indexOf(it.category) >= 0) s -= 0.6;
-    return s + Math.random() * 0.25;
+  if (d.event === 'onError' && current) {
+    // 100 not found, 101/150 embedding disabled: mark bad locally and move on.
+    st.bad[current.id] = Date.now(); saveState(); toast('Ye short embed nahi ho raha, agla');
+    playNext(true);
   }
-  function candidates() {
-    var pool = items.filter(function (it) { return (filter === 'all' || it.category === filter) && seen.indexOf(it.id) < 0; });
-    if (!pool.length) { seen = []; save(SEEN_KEY, seen); pool = items.filter(function (it) { return filter === 'all' || it.category === filter; }); }
-    return pool;
+});
+function listen() { try { frame.contentWindow.postMessage(JSON.stringify({ event: 'listening', id: 'frame', channel: 'widget' }), '*'); } catch (e) {} }
+frame.addEventListener('load', () => { listen(); setTimeout(listen, 800); });
+
+function finishCurrent(ended) {
+  if (!current) return;
+  const dur = playerInfo.dur || current.duration || 0;
+  const sec = ended ? (dur || playerInfo.cur) : playerInfo.cur;
+  const item = { ...current, duration: dur };
+  A.applySignal(st, 'watch_ms', Math.round(sec * 1000), item, moodVal, Date.now());
+  if (ended) st.watched[current.id] = Date.now();
+  A.recordCategoryShown(st, current.cat);
+  saveState();
+}
+function signal(event) { if (!current) return; const item = { ...current, duration: playerInfo.dur || current.duration || 0 }; A.applySignal(st, event, 0, item, moodVal, Date.now()); saveState(); }
+
+// ── queue ──
+function visibleItems() {
+  return feed.filter(v => !filter || v.cat === filter);
+}
+function refill() {
+  queue = A.rankFeed(visibleItems(), st, { mood: moodVal, limit: 30, cats: filter ? [filter] : null });
+  if (!queue.length) {
+    // everything watched: forgive watch marks so the feed keeps going
+    st.watched = {}; saveState();
+    queue = A.rankFeed(visibleItems(), st, { mood: moodVal, limit: 30, cats: filter ? [filter] : null });
   }
+}
+function show(item) {
+  current = item;
+  playerInfo = { cur: 0, dur: 0, state: -1 };
+  msg.hidden = true; frame.style.visibility = 'visible';
+  frame.src = 'https://www.youtube-nocookie.com/embed/' + encodeURIComponent(item.id) + '?autoplay=1&playsinline=1&rel=0&modestbranding=1&enablejsapi=1';
+  $('title').textContent = item.title;
+  $('meta').textContent = (item.channel || '') + ' · ' + label(item.cat);
+  $('ext').href = 'https://www.youtube.com/shorts/' + encodeURIComponent(item.id);
+  $('follow').classList.toggle('on', !!st.follows[item.chId]);
+  $('like').classList.toggle('on', !!st.likes[item.id]);
+}
+function playNext(force) {
+  if (!feed.length) return showMsg('Abhi koi short nahi. Collector ke pehle run ke baad yahan aayenge.');
+  if (queue.length === 0) refill();
+  // skip ids already in this session's history window (no immediate repeats)
+  let next = null;
+  while (queue.length) { const c = queue.shift(); if (!st.bad[c.id] && !st.watched[c.id]) { next = c; break; } }
+  if (!next) { refill(); if (!queue.length) return showMsg('Is filter me abhi kuch nahi hai.'); next = queue.shift(); }
+  if (current) history.push(current);
+  if (history.length > 200) history.shift();
+  show(next);
+}
+function showMsg(t) { frame.src = 'about:blank'; frame.style.visibility = 'hidden'; msg.textContent = t; msg.hidden = false; $('title').textContent = ''; $('meta').textContent = ''; }
 
-  function show(it, push) {
-    if (current && push) history.push(current);
-    current = it;
-    if (history.length > 100) history.shift();
-    lastCats.push(it.category); if (lastCats.length > 3) lastCats.shift();
-    seen.push(it.id); if (seen.length > SEEN_MAX) seen = seen.slice(-SEEN_MAX); save(SEEN_KEY, seen);
-    msg.hidden = true; frame.style.visibility = 'visible';
-    frame.src = 'https://www.youtube.com/embed/' + encodeURIComponent(it.id) + '?autoplay=1&playsinline=1&rel=0&modestbranding=1';
-    $('title').textContent = it.title;
-    $('meta').textContent = (it.channel || '') + ' · ' + label(it.category);
-    $('ext').href = 'https://www.youtube.com/shorts/' + encodeURIComponent(it.id);
-  }
-
-  function pickNext(fresh) {
-    if (!items.length) return showMsg('Abhi koi short nahi. Collector ke pehle run ke baad yahan aayenge.');
-    var pool = candidates(), now = Date.now();
-    if (!pool.length) return showMsg('Is category me abhi kuch nahi hai.');
-    var best = pool[0], bs = -Infinity;
-    pool.forEach(function (it) { var s = score(it, now); if (s > bs) { bs = s; best = it; } });
-    show(best, !fresh);
-  }
-
-  function showMsg(t) { frame.src = 'about:blank'; frame.style.visibility = 'hidden'; msg.textContent = t; msg.hidden = false; $('title').textContent = ''; $('meta').textContent = ''; }
-
-  function bump(cat, d) { prefs[cat] = Math.max(-3, Math.min(5, (prefs[cat] || 0) + d)); save(PREF_KEY, prefs); }
-
-  $('next').onclick = function () { if (current) bump(current.category, 0); pickNext(false); };
-  $('skip').onclick = function () { if (current) bump(current.category, -0.5); pickNext(false); };
-  $('like').onclick = function () { if (current) { bump(current.category, 1); } pickNext(false); };
-  $('prev').onclick = function () { if (history.length) { var p = history.pop(); current = null; show(p, false); } };
-  document.addEventListener('keydown', function (e) {
-    if (e.key === 'ArrowDown' || e.key === 'ArrowRight') $('next').click();
-    else if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') $('prev').click();
-    else if (e.key === 'l') $('like').click();
+// ── UI ──
+function buildChips() {
+  const cats = {};
+  feed.forEach(v => { if (v.cat) cats[v.cat] = (cats[v.cat] || 0) + 1; });
+  const box = $('chips'); box.innerHTML = '';
+  [null, ...Object.keys(cats).sort()].forEach(c => {
+    const b = document.createElement('button');
+    b.className = 'chip' + (c === filter ? ' on' : '');
+    b.textContent = c ? label(c) : 'All';
+    b.onclick = () => { if (current) finishCurrent(false); filter = c; buildChips(); queue = []; playNext(true); };
+    box.appendChild(b);
   });
+}
+$('next').onclick = () => { if (current) finishCurrent(false); playNext(false); };
+$('prev').onclick = () => { if (!history.length) return toast('Pichla nahi hai'); if (current) finishCurrent(false); const p = history.pop(); current = null; show(p); };
+$('skip').onclick = () => { signal('skip'); if (current) finishCurrent(false); playNext(false); };
+$('like').onclick = () => { signal('like'); if (current) st.likes[current.id] = Date.now(); saveState(); $('like').classList.add('on'); toast('Pasand kiya'); };
+$('notint').onclick = () => { signal('not_interested'); if (current) st.bad[current.id] = Date.now(); saveState(); toast('Kam dikhayenge'); playNext(false); };
+$('follow').onclick = () => {
+  if (!current || !current.chId) return;
+  if (st.follows[current.chId]) { delete st.follows[current.chId]; toast('Unfollow'); }
+  else { st.follows[current.chId] = 1; signal('more_like_this'); toast('Follow kiya'); }
+  saveState(); $('follow').classList.toggle('on', !!st.follows[current.chId]);
+};
+$('mood').onchange = e => { moodVal = e.target.value; localStorage.setItem(MOOD_KEY, moodVal); queue = []; playNext(true); };
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowDown' || e.key === 'ArrowRight') $('next').click();
+  else if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') $('prev').click();
+  else if (e.key === 'l' || e.key === 'L') $('like').click();
+  else if (e.key === 'x' || e.key === 'X') $('skip').click();
+});
 
-  fetch(DATA_URL, { cache: 'no-cache' })
-    .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
-    .then(function (d) {
-      items = (d.items || []).filter(function (it) { return it && it.id; });
-      buildChips();
-      pickNext(true);
-    })
-    .catch(function (e) { showMsg('Shorts load nahi hue (' + e.message + ').'); });
-})();
+fetch(FEED_URL, { cache: 'no-cache' })
+  .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+  .then(d => {
+    feed = (d.items || []).filter(v => v && v.id);
+    buildChips();
+    playNext(true);
+  })
+  .catch(e => showMsg('Shorts load nahi hue (' + e.message + ').'));
 </script>
 </body>
 </html>
